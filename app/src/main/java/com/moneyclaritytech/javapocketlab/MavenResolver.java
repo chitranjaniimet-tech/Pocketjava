@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
@@ -32,6 +31,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public final class MavenResolver {
     private static final String CENTRAL = "https://repo1.maven.org/maven2/";
     private static final long MAX_FILE_BYTES = 60L * 1024L * 1024L;
+    private static final String ACCESS_EXTERNAL_DTD = "http://javax.xml.XMLConstants/property/accessExternalDTD";
+    private static final String ACCESS_EXTERNAL_SCHEMA = "http://javax.xml.XMLConstants/property/accessExternalSchema";
     private final File root;
 
     public MavenResolver(Context context) {
@@ -111,8 +112,8 @@ public final class MavenResolver {
         f.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
         f.setXIncludeAware(false);
         f.setExpandEntityReferences(false);
-        try { f.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); } catch (IllegalArgumentException ignored) {}
-        try { f.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); } catch (IllegalArgumentException ignored) {}
+        try { f.setAttribute(ACCESS_EXTERNAL_DTD, ""); } catch (IllegalArgumentException ignored) {}
+        try { f.setAttribute(ACCESS_EXTERNAL_SCHEMA, ""); } catch (IllegalArgumentException ignored) {}
 
         Document doc = f.newDocumentBuilder().parse(pom);
         Element project = doc.getDocumentElement();
