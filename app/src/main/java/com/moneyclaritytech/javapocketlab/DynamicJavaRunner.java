@@ -137,14 +137,14 @@ public final class DynamicJavaRunner {
             main.invoke(null, (Object) new String[0]);
 
             capture.flush();
-            return RunResult.success(captured.toString(StandardCharsets.UTF_8.name()), elapsed(start));
+            return RunResult.success(asUtf8(captured), elapsed(start));
         } catch (InvocationTargetException target) {
             Throwable real = target.getTargetException() == null ? target : target.getTargetException();
             real.printStackTrace(new PrintStream(captured));
-            return RunResult.error(captured.toString(StandardCharsets.UTF_8.name()), elapsed(start));
+            return RunResult.error(asUtf8(captured), elapsed(start));
         } catch (Throwable t) {
             t.printStackTrace(new PrintStream(captured));
-            return RunResult.error(captured.toString(StandardCharsets.UTF_8.name()), elapsed(start));
+            return RunResult.error(asUtf8(captured), elapsed(start));
         } finally {
             System.setOut(oldOut);
             System.setErr(oldErr);
@@ -169,6 +169,10 @@ public final class DynamicJavaRunner {
         Matcher any = ANY_CLASS.matcher(s);
         if (any.find()) return any.group(1);
         throw new IllegalArgumentException("No Java class found. Add: public class Main { ... }");
+    }
+
+    private static String asUtf8(ByteArrayOutputStream captured) {
+        return new String(captured.toByteArray(), StandardCharsets.UTF_8);
     }
 
     private static long elapsed(long start) {
