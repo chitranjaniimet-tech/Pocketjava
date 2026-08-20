@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: pocketjava-release-${{ github.ref }}
@@ -45,12 +46,51 @@ jobs:
           sdkmanager --list_installed | grep -E "platforms;android-36|build-tools;35.0.0" || true
 
       - name: Build installable APK
-        run: gradle --no-daemon --stacktrace --warning-mode all :app:assembleDebug
+        id: build
+        shell: bash
+        run: |
+          set +e
+          gradle --no-daemon --stacktrace --warning-mode all :app:assembleDebug 2>&1 | tee build.log
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Publish failure diagnostics to one GitHub issue
+        if: steps.build.outputs.status != '0'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## PocketJava CI failure diagnostics"
+            echo
+            echo "- Branch: \`$GITHUB_REF_NAME\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Run: \`$GITHUB_RUN_NUMBER\`"
+            echo
+            echo "### Last 220 lines of Gradle output"
+            echo '```text'
+            tail -n 220 build.log || true
+            echo '```'
+          } > failure.md
+
+          issue_number=$(gh issue list --state open --search 'PocketJava CI failure diagnostics in:title' --json number --jq '.[0].number // empty')
+          if [ -n "$issue_number" ]; then
+            gh issue edit "$issue_number" --body-file failure.md
+          else
+            gh issue create --title "PocketJava CI failure diagnostics" --body-file failure.md
+          fi
+
+      - name: Fail workflow after diagnostics are saved
+        if: steps.build.outputs.status != '0'
+        run: exit 1
 
       - name: Prepare release APK
+        if: steps.build.outputs.status == '0'
         run: cp app/build/outputs/apk/debug/app-debug.apk PocketJava.apk
 
       - name: Publish APK directly to GitHub Release
+        if: steps.build.outputs.status == '0'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
