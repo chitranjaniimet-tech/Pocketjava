@@ -7,12 +7,12 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 
-import org.codehaus.commons.compiler.ICompiler;
-import org.codehaus.commons.compiler.ICompilerFactory;
 import org.codehaus.commons.compiler.util.resource.MapResourceCreator;
+import org.codehaus.commons.compiler.util.resource.MapResourceFinder;
 import org.codehaus.commons.compiler.util.resource.Resource;
 import org.codehaus.commons.compiler.util.resource.StringResource;
-import org.codehaus.janino.CompilerFactory;
+import org.codehaus.janino.ClassLoaderIClassLoader;
+import org.codehaus.janino.Compiler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,13 +73,19 @@ public final class DynamicJavaRunner {
             String packageName = detectPackage(source);
             String fqcn = packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
 
-            ICompilerFactory factory = new CompilerFactory();
-            ICompiler compiler = factory.newCompiler();
             Map<String, byte[]> classes = new HashMap<>();
+
+            // Janino's default Compiler boot-classpath discovery assumes a desktop JVM.
+            // Android has neither sun.boot.class.path nor Java 9+ jrt: modules, which causes
+            // Janino 3.1.12 to assert before even compiling java.lang.Object. Give Janino an
+            // explicit reflection-backed class loader so platform classes are resolved through
+            // Android's actual application/boot class-loader chain instead.
+            Compiler compiler = new Compiler();
+            compiler.setIClassLoader(new ClassLoaderIClassLoader(context.getClassLoader()));
             compiler.setClassFileCreator(new MapResourceCreator(classes));
-            if (dependencyJars != null && !dependencyJars.isEmpty()) {
-                compiler.setClassPath(dependencyJars.toArray(new File[0]));
-            }
+            compiler.setClassFileFinder(new MapResourceFinder(classes));
+            compiler.setDebugSource(true);
+            compiler.setDebugLines(true);
             compiler.compile(new Resource[] { new StringResource(simpleName + ".java", source) });
 
             if (classes.isEmpty()) {
