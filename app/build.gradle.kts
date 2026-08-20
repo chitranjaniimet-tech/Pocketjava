@@ -66,5 +66,6 @@ dependencies {
     implementation("org.codehaus.janino:commons-compiler:3.1.12")
 
     // D8 converts generated JVM .class files into Android DEX at runtime.
-    implementation("com.android.tools:r8:9.3.12-dev")
+    // Pin to the stable R8 version paired with Android Gradle Plugin 8.13.2.
+    implementation("com.android.tools:r8:8.13.19")
 }
