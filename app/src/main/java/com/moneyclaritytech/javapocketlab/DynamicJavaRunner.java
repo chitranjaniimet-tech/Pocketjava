@@ -9,10 +9,13 @@ import com.android.tools.r8.OutputMode;
 
 import org.codehaus.commons.compiler.util.resource.MapResourceCreator;
 import org.codehaus.commons.compiler.util.resource.MapResourceFinder;
+import org.codehaus.commons.compiler.util.resource.PathResourceFinder;
 import org.codehaus.commons.compiler.util.resource.Resource;
 import org.codehaus.commons.compiler.util.resource.StringResource;
 import org.codehaus.janino.ClassLoaderIClassLoader;
 import org.codehaus.janino.Compiler;
+import org.codehaus.janino.IClassLoader;
+import org.codehaus.janino.ResourceFinderIClassLoader;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -24,6 +27,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,13 +79,31 @@ public final class DynamicJavaRunner {
 
             Map<String, byte[]> classes = new HashMap<>();
 
-            // Janino's default Compiler boot-classpath discovery assumes a desktop JVM.
-            // Android has neither sun.boot.class.path nor Java 9+ jrt: modules, which causes
-            // Janino 3.1.12 to assert before even compiling java.lang.Object. Give Janino an
-            // explicit reflection-backed class loader so platform classes are resolved through
-            // Android's actual application/boot class-loader chain instead.
+            // Janino's default boot-classpath discovery assumes a desktop JVM. Android has
+            // neither sun.boot.class.path nor Java 9+ jrt: modules, so Janino 3.1.12 asserts
+            // before it can resolve java.lang.Object. Resolve Android platform classes through
+            // the real app/boot class-loader chain instead.
+            IClassLoader platformClasses = new ClassLoaderIClassLoader(context.getClassLoader());
+            IClassLoader compilationClasses = platformClasses;
+
+            // Keep Maven/library support: Janino can inspect normal JVM .class entries directly
+            // from downloaded JARs while delegating java.* / Android-visible classes to the
+            // reflection-backed platform loader above.
+            List<File> validDependencyJars = new ArrayList<>();
+            if (dependencyJars != null) {
+                for (File jar : dependencyJars) {
+                    if (jar != null && jar.isFile()) validDependencyJars.add(jar);
+                }
+            }
+            if (!validDependencyJars.isEmpty()) {
+                compilationClasses = new ResourceFinderIClassLoader(
+                        new PathResourceFinder(validDependencyJars.toArray(new File[0])),
+                        platformClasses
+                );
+            }
+
             Compiler compiler = new Compiler();
-            compiler.setIClassLoader(new ClassLoaderIClassLoader(context.getClassLoader()));
+            compiler.setIClassLoader(compilationClasses);
             compiler.setClassFileCreator(new MapResourceCreator(classes));
             compiler.setClassFileFinder(new MapResourceFinder(classes));
             compiler.setDebugSource(true);
@@ -113,11 +135,7 @@ public final class DynamicJavaRunner {
                     .setDisableDesugaring(true)
                     .setOutput(d8TempArchive.toPath(), OutputMode.DexIndexed);
 
-            if (dependencyJars != null) {
-                for (File jar : dependencyJars) {
-                    if (jar != null && jar.isFile()) d8.addProgramFiles(jar.toPath());
-                }
-            }
+            for (File jar : validDependencyJars) d8.addProgramFiles(jar.toPath());
             D8.run(d8.build());
 
             try (FileOutputStream out = new FileOutputStream(dexArchive);
