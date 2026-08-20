@@ -1,0 +1,7 @@
+-keep class org.codehaus.janino.** { *; }
+-keep class org.codehaus.commons.compiler.** { *; }
+-keep class com.android.tools.r8.** { *; }
+-keep class io.github.rosemoe.sora.** { *; }
+-dontwarn org.codehaus.janino.**
+-dontwarn org.codehaus.commons.compiler.**
+-dontwarn com.android.tools.r8.**

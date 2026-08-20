@@ -1,0 +1,48 @@
+name: Build PocketJava Release
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pocketjava-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android 16 platform
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build installable APK
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Prepare release APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk PocketJava.apk
+      - name: Publish APK directly to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="build-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" PocketJava.apk \
+            --target "$GITHUB_SHA" \
+            --title "PocketJava 0.2.0 • Build ${GITHUB_RUN_NUMBER}" \
+            --notes "Phone-first Java learning IDE. Install PocketJava.apk from Assets. This workflow publishes directly to Releases and does not use GitHub Actions artifact storage."
