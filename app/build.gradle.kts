@@ -2,6 +2,9 @@ plugins {
     id("com.android.application")
 }
 
+val ciVersionCode = providers.gradleProperty("ciVersionCode").orNull?.toIntOrNull()
+val ciDebugKeystore = providers.gradleProperty("pocketJavaDebugKeystore").orNull
+
 android {
     namespace = "com.moneyclaritytech.javapocketlab"
     compileSdk = 36
@@ -10,8 +13,19 @@ android {
         applicationId = "com.moneyclaritytech.javapocketlab"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
+        versionCode = ciVersionCode ?: 2
         versionName = "0.2.0"
+    }
+
+    signingConfigs {
+        if (!ciDebugKeystore.isNullOrBlank()) {
+            create("persistentDebug") {
+                storeFile = file(ciDebugKeystore)
+                storePassword = "pocketjava-debug-2026"
+                keyAlias = "pocketjava-debug"
+                keyPassword = "pocketjava-debug-2026"
+            }
+        }
     }
 
     buildTypes {
@@ -25,6 +39,9 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            if (!ciDebugKeystore.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("persistentDebug")
+            }
         }
     }
 
