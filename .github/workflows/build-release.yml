@@ -39,6 +39,17 @@ jobs:
         with:
           gradle-version: '8.13'
 
+      - name: Restore persistent PocketJava debug signing key
+        shell: bash
+        run: |
+          mkdir -p .ci
+          base64 --decode .ci/pocketjava-debug.keystore.b64 > .ci/pocketjava-debug.jks
+          chmod 600 .ci/pocketjava-debug.jks
+          keytool -list \
+            -keystore .ci/pocketjava-debug.jks \
+            -storepass pocketjava-debug-2026 \
+            -alias pocketjava-debug >/dev/null
+
       - name: Verify build environment
         run: |
           java -version
@@ -50,9 +61,14 @@ jobs:
         shell: bash
         run: |
           set +e
-          gradle --no-daemon --stacktrace --warning-mode all :app:assembleDebug 2>&1 | tee build.log
+          CI_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
+          gradle --no-daemon --stacktrace --warning-mode all \
+            -PciVersionCode="$CI_VERSION_CODE" \
+            -PpocketJavaDebugKeystore="$GITHUB_WORKSPACE/.ci/pocketjava-debug.jks" \
+            :app:assembleDebug 2>&1 | tee build.log
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "version_code=$CI_VERSION_CODE" >> "$GITHUB_OUTPUT"
           exit 0
 
       - name: Publish failure diagnostics to one GitHub issue
@@ -98,4 +114,4 @@ jobs:
           gh release create "$TAG" PocketJava.apk \
             --target "$GITHUB_SHA" \
             --title "PocketJava 0.2.0 • Build ${GITHUB_RUN_NUMBER}" \
-            --notes "Phone-first Java learning IDE. Install PocketJava.apk from Assets. This workflow publishes directly to Releases and does not use GitHub Actions artifact storage."
+            --notes "Upgradeable PocketJava debug APK. All CI debug builds use the same persistent signing identity and an increasing versionCode, so future APKs can install over this build without uninstalling. Published directly to Releases; no GitHub Actions artifact storage is used."
