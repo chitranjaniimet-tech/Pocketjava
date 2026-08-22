@@ -7,30 +7,22 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 
-import org.codehaus.commons.compiler.util.resource.MapResourceCreator;
-import org.codehaus.commons.compiler.util.resource.MapResourceFinder;
-import org.codehaus.commons.compiler.util.resource.PathResourceFinder;
-import org.codehaus.commons.compiler.util.resource.Resource;
-import org.codehaus.commons.compiler.util.resource.StringResource;
-import org.codehaus.janino.ClassLoaderIClassLoader;
-import org.codehaus.janino.Compiler;
-import org.codehaus.janino.IClassLoader;
-import org.codehaus.janino.ResourceFinderIClassLoader;
+import org.eclipse.jdt.core.compiler.batch.BatchCompiler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -40,12 +32,12 @@ import java.util.regex.Pattern;
 import dalvik.system.DexClassLoader;
 
 /**
- * Real on-device Java execution pipeline:
- * Java source -> Janino .class bytes -> D8 -> classes.dex -> DexClassLoader -> main().
+ * On-device Java pipeline:
+ * Java source -> Eclipse Compiler for Java (ECJ) -> JVM .class -> D8 -> DEX -> main().
  *
- * This intentionally targets beginner/educational Java. It does not pretend to bundle a
- * complete desktop OpenJDK installation. Code executes with the app's Android process
- * permissions, so the UI enforces a short timeout and treats user code as trusted local code.
+ * ECJ is used instead of Janino so normal modern Java syntax such as lambdas, method
+ * references, streams and Java 11 source constructs can be compiled. CI bundles stripped
+ * Android API 36 class stubs, which act as the compiler platform library on Android.
  */
 public final class DynamicJavaRunner {
     private static final Pattern PACKAGE = Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_][\\w.]*)\\s*;");
@@ -61,68 +53,71 @@ public final class DynamicJavaRunner {
     public RunResult run(String source, String stdin, List<File> dependencyJars) {
         long start = System.currentTimeMillis();
         File runDir = new File(context.getCodeCacheDir(), "runs/" + UUID.randomUUID());
-        runDir.mkdirs();
+        File sourceDir = new File(runDir, "src");
+        File classesDir = new File(runDir, "classes");
+        sourceDir.mkdirs();
+        classesDir.mkdirs();
 
         PrintStream oldOut = System.out;
         PrintStream oldErr = System.err;
         java.io.InputStream oldIn = System.in;
+        String oldUserDir = System.getProperty("user.dir");
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
 
         try (PrintStream capture = new PrintStream(captured, true, StandardCharsets.UTF_8.name())) {
             System.setOut(capture);
             System.setErr(capture);
             System.setIn(new ByteArrayInputStream((stdin == null ? "" : stdin).getBytes(StandardCharsets.UTF_8)));
+            System.setProperty("user.dir", context.getFilesDir().getAbsolutePath());
 
             String simpleName = detectSimpleClassName(source);
             String packageName = detectPackage(source);
             String fqcn = packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
 
-            Map<String, byte[]> classes = new HashMap<>();
-
-            // Janino's default boot-classpath discovery assumes a desktop JVM. Android has
-            // neither sun.boot.class.path nor Java 9+ jrt: modules, so Janino 3.1.12 asserts
-            // before it can resolve java.lang.Object. Resolve Android platform classes through
-            // the real app/boot class-loader chain instead.
-            IClassLoader platformClasses = new ClassLoaderIClassLoader(context.getClassLoader());
-            IClassLoader compilationClasses = platformClasses;
-
-            // Keep Maven/library support: Janino can inspect normal JVM .class entries directly
-            // from downloaded JARs while delegating java.* / Android-visible classes to the
-            // reflection-backed platform loader above.
-            List<File> validDependencyJars = new ArrayList<>();
-            if (dependencyJars != null) {
-                for (File jar : dependencyJars) {
-                    if (jar != null && jar.isFile()) validDependencyJars.add(jar);
+            File packageDir = sourceDir;
+            if (!packageName.isEmpty()) {
+                packageDir = new File(sourceDir, packageName.replace('.', File.separatorChar));
+                if (!packageDir.mkdirs() && !packageDir.isDirectory()) {
+                    throw new IllegalStateException("Could not create source package directory");
                 }
             }
-            if (!validDependencyJars.isEmpty()) {
-                compilationClasses = new ResourceFinderIClassLoader(
-                        new PathResourceFinder(validDependencyJars.toArray(new File[0])),
-                        platformClasses
-                );
-            }
+            File sourceFile = new File(packageDir, simpleName + ".java");
+            writeUtf8(sourceFile, source == null ? "" : source);
 
-            Compiler compiler = new Compiler();
-            compiler.setIClassLoader(compilationClasses);
-            compiler.setClassFileCreator(new MapResourceCreator(classes));
-            compiler.setClassFileFinder(new MapResourceFinder(classes));
-            compiler.setDebugSource(true);
-            compiler.setDebugLines(true);
-            compiler.compile(new Resource[] { new StringResource(simpleName + ".java", source) });
+            File platformJar = CompilerPlatform.ensure(context);
+            List<File> validDependencyJars = validDependencies(dependencyJars);
 
-            if (classes.isEmpty()) {
-                return RunResult.error("Compilation produced no classes.", elapsed(start));
+            List<String> classPathEntries = new ArrayList<>();
+            classPathEntries.add(platformJar.getAbsolutePath());
+            for (File dependency : validDependencyJars) classPathEntries.add(dependency.getAbsolutePath());
+            String classPath = joinPath(classPathEntries);
+
+            PrintWriter compilerOutput = new PrintWriter(new OutputStreamWriter(captured, StandardCharsets.UTF_8), true);
+            String[] ecjArgs = new String[] {
+                    "-proc:none",
+                    "-encoding", "UTF-8",
+                    "-source", "11",
+                    "-target", "11",
+                    "-nowarn",
+                    "-g",
+                    "-d", classesDir.getAbsolutePath(),
+                    "-classpath", classPath,
+                    sourceFile.getAbsolutePath()
+            };
+
+            boolean compiled = BatchCompiler.compile(ecjArgs, compilerOutput, compilerOutput, null);
+            compilerOutput.flush();
+            if (!compiled) {
+                String diagnostics = asUtf8(captured).trim();
+                if (diagnostics.isEmpty()) diagnostics = "Compilation failed without diagnostics.";
+                return RunResult.error(diagnostics, elapsed(start));
             }
 
             File classesJar = new File(runDir, "program.jar");
-            try (JarOutputStream jar = new JarOutputStream(Files.newOutputStream(classesJar.toPath()))) {
-                for (Map.Entry<String, byte[]> entry : classes.entrySet()) {
-                    String name = entry.getKey().replace('\\', '/');
-                    if (!name.endsWith(".class")) name += ".class";
-                    JarEntry je = new JarEntry(name);
-                    jar.putNextEntry(je);
-                    jar.write(entry.getValue());
-                    jar.closeEntry();
+            try (JarOutputStream jar = new JarOutputStream(new FileOutputStream(classesJar))) {
+                int count = addClassesToJar(classesDir, classesDir, jar);
+                if (count == 0) {
+                    return RunResult.error("Compilation produced no class files.", elapsed(start));
                 }
             }
 
@@ -130,9 +125,9 @@ public final class DynamicJavaRunner {
             File dexArchive = new File(runDir, "program-dex.zip");
             D8Command.Builder d8 = D8Command.builder()
                     .addProgramFiles(classesJar.toPath())
+                    .addLibraryFiles(platformJar.toPath())
                     .setMode(CompilationMode.DEBUG)
                     .setMinApiLevel(26)
-                    .setDisableDesugaring(true)
                     .setOutput(d8TempArchive.toPath(), OutputMode.DexIndexed);
 
             for (File jar : validDependencyJars) d8.addProgramFiles(jar.toPath());
@@ -140,13 +135,13 @@ public final class DynamicJavaRunner {
 
             try (FileOutputStream out = new FileOutputStream(dexArchive);
                  FileInputStream in = new FileInputStream(d8TempArchive)) {
-                if (!dexArchive.setReadOnly()) {
-                    throw new IllegalStateException("Could not secure generated DEX as read-only");
-                }
                 byte[] buf = new byte[16 * 1024];
                 int n;
                 while ((n = in.read(buf)) >= 0) out.write(buf, 0, n);
                 out.flush();
+            }
+            if (!dexArchive.setReadOnly()) {
+                throw new IllegalStateException("Could not secure generated DEX as read-only");
             }
 
             DexClassLoader loader = new DexClassLoader(
@@ -172,12 +167,66 @@ public final class DynamicJavaRunner {
             System.setOut(oldOut);
             System.setErr(oldErr);
             System.setIn(oldIn);
+            if (oldUserDir == null) {
+                System.clearProperty("user.dir");
+            } else {
+                System.setProperty("user.dir", oldUserDir);
+            }
             deleteTree(runDir);
         }
     }
 
     public static boolean probablyNeedsInput(String source) {
         return source != null && (source.contains("System.in") || source.contains("new Scanner("));
+    }
+
+    private static List<File> validDependencies(List<File> dependencyJars) {
+        List<File> result = new ArrayList<>();
+        if (dependencyJars != null) {
+            for (File jar : dependencyJars) {
+                if (jar != null && jar.isFile()) result.add(jar);
+            }
+        }
+        return result;
+    }
+
+    private static String joinPath(List<String> entries) {
+        StringBuilder result = new StringBuilder();
+        for (String entry : entries) {
+            if (result.length() > 0) result.append(File.pathSeparatorChar);
+            result.append(entry);
+        }
+        return result.toString();
+    }
+
+    private static int addClassesToJar(File root, File current, JarOutputStream jar) throws Exception {
+        File[] children = current.listFiles();
+        if (children == null) return 0;
+        int count = 0;
+        for (File child : children) {
+            if (child.isDirectory()) {
+                count += addClassesToJar(root, child, jar);
+            } else if (child.getName().endsWith(".class")) {
+                String relative = root.toURI().relativize(child.toURI()).getPath();
+                JarEntry entry = new JarEntry(relative);
+                jar.putNextEntry(entry);
+                try (InputStream in = new FileInputStream(child)) {
+                    byte[] buffer = new byte[16 * 1024];
+                    int read;
+                    while ((read = in.read(buffer)) != -1) jar.write(buffer, 0, read);
+                }
+                jar.closeEntry();
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static void writeUtf8(File file, String text) throws Exception {
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            out.write(text.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+        }
     }
 
     private static String detectPackage(String source) {
