@@ -13,8 +13,8 @@ android {
         applicationId = "com.moneyclaritytech.javapocketlab"
         minSdk = 26
         targetSdk = 36
-        versionCode = ciVersionCode ?: 2
-        versionName = "0.2.0"
+        versionCode = ciVersionCode ?: 3
+        versionName = "0.3.0"
     }
 
     signingConfigs {
@@ -78,11 +78,10 @@ dependencies {
     implementation("io.github.rosemoe:editor")
     implementation("io.github.rosemoe:language-java")
 
-    // Small embedded Java compiler (BSD-3-Clause)
-    implementation("org.codehaus.janino:janino:3.1.12")
-    implementation("org.codehaus.janino:commons-compiler:3.1.12")
+    // Full Eclipse Compiler for Java. Unlike Janino, ECJ compiles modern Java syntax,
+    // including lambdas, method references, streams-facing source and Java 11 code.
+    implementation("org.eclipse.jdt:ecj:3.46.0")
 
-    // D8 converts generated JVM .class files into Android DEX at runtime.
-    // Pin to the stable R8 version paired with Android Gradle Plugin 8.13.2.
+    // D8 converts ECJ-generated JVM .class files into Android DEX at runtime.
     implementation("com.android.tools:r8:8.13.19")
 }
