@@ -8,15 +8,21 @@ PocketJava is a clean-room project and does not contain Jvdroid source code, bun
 - License: LGPL-2.1
 - Used for the Android code editor and Java language support.
 
-## Janino / Commons Compiler
-- Version: 3.1.12
-- License: BSD-3-Clause
-- Used to compile educational Java source into JVM class files on-device.
+## Eclipse Compiler for Java (ECJ)
+- Project: Eclipse JDT Core
+- Version: 3.46.0
+- License: Eclipse Public License 2.0
+- Used as the on-device Java compiler for modern Java source, including lambdas and Java 11 language-level compilation.
+
+## Android API 36 compile-time stubs
+- Source: Android SDK platform android-36 `android.jar`
+- Used only as the compile-time platform library for ECJ. CI strips Android resources/assets and bundles the class stubs required for type resolution.
+- Subject to the Android SDK / Android Open Source Project notices applicable to the platform SDK.
 
 ## Google R8 / D8
-- Version: 9.3.12-dev
+- Version: 8.13.19
 - License: BSD-style / Android Open Source Project notices
-- Used at runtime to convert generated JVM class files into Android DEX.
+- Used at runtime to convert ECJ-generated JVM class files into Android DEX.
 
 ## AndroidX / Material Components
 - Used for Android UI and platform compatibility under their respective Apache-2.0 licenses.
