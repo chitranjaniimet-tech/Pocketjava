@@ -34,6 +34,22 @@ jobs:
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platforms;android-36" "build-tools;35.0.0"
 
+      - name: Prepare ECJ Android 16 compiler platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .ci/android-platform
+          mkdir -p .ci/android-platform app/src/main/assets/compiler
+          cp "$ANDROID_HOME/platforms/android-36/android.jar" .ci/android-platform/android.jar
+          pushd .ci/android-platform >/dev/null
+          unzip -q android.jar
+          rm -f android.jar resources.arsc
+          rm -rf res assets
+          jar cfM "$GITHUB_WORKSPACE/app/src/main/assets/compiler/android-36.jar" .
+          popd >/dev/null
+          test -s app/src/main/assets/compiler/android-36.jar
+          echo "Compiler platform size: $(du -h app/src/main/assets/compiler/android-36.jar | cut -f1)"
+
       - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -55,6 +71,7 @@ jobs:
           java -version
           gradle --version
           sdkmanager --list_installed | grep -E "platforms;android-36|build-tools;35.0.0" || true
+          test -s app/src/main/assets/compiler/android-36.jar
 
       - name: Build installable APK
         id: build
@@ -113,5 +130,5 @@ jobs:
           TAG="build-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" PocketJava.apk \
             --target "$GITHUB_SHA" \
-            --title "PocketJava 0.2.0 • Build ${GITHUB_RUN_NUMBER}" \
-            --notes "Upgradeable PocketJava debug APK. All CI debug builds use the same persistent signing identity and an increasing versionCode, so future APKs can install over this build without uninstalling. Published directly to Releases; no GitHub Actions artifact storage is used."
+            --title "PocketJava 0.3.0 • Build ${GITHUB_RUN_NUMBER}" \
+            --notes "PocketJava 0.3 replaces Janino with the Eclipse Compiler for Java (ECJ) and bundles Android 16/API 36 compile-time stubs for modern Java code. Upgradeable debug signing remains stable. Published directly to Releases; no GitHub Actions artifact storage is used."
