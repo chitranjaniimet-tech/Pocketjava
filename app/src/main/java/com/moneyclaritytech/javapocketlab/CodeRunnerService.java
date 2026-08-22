@@ -27,7 +27,7 @@ public final class CodeRunnerService extends Service {
     public static final int RESULT_OK = 1;
     public static final int RESULT_ERROR = 2;
     public static final int RESULT_TIMEOUT = 3;
-    private static final long TIMEOUT_MS = 8_000L;
+    private static final long TIMEOUT_MS = 20_000L;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -58,7 +58,7 @@ public final class CodeRunnerService extends Service {
             if (runFinished.compareAndSet(false, true)) {
                 if (receiver != null) {
                     Bundle b = new Bundle();
-                    b.putString("output", "Program stopped after 8 seconds. This usually means an infinite or very long loop.");
+                    b.putString("output", "Program stopped after 20 seconds. Compilation or execution took too long; check for an infinite loop or very heavy work.");
                     receiver.send(RESULT_TIMEOUT, b);
                 }
                 Process.killProcess(Process.myPid());
