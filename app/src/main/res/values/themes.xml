@@ -1,11 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.JavaPocketLab" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/brand_primary</item>
-        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorPrimary">@color/theme_primary</item>
+        <item name="colorOnPrimary">@color/theme_on_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/theme_on_primary_container</item>
+        <item name="colorSecondary">@color/theme_secondary</item>
+        <item name="colorOnSecondary">@color/theme_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/theme_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/theme_on_secondary_container</item>
+        <item name="colorSurface">@color/theme_surface</item>
+        <item name="colorSurfaceContainer">@color/theme_surface_container</item>
+        <item name="colorSurfaceContainerLow">@color/theme_surface_container_low</item>
+        <item name="colorOnSurface">@color/theme_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/theme_on_surface_variant</item>
+        <item name="colorOutline">@color/theme_outline</item>
         <item name="android:fontFamily">sans</item>
         <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
+    <style name="Theme.JavaPocketLab.Forest" parent="Theme.JavaPocketLab">
+        <item name="colorPrimary">@color/forest_primary</item>
+        <item name="colorOnPrimary">@color/forest_on_primary</item>
+        <item name="colorPrimaryContainer">@color/forest_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/forest_on_primary_container</item>
+    </style>
+
+    <style name="Theme.JavaPocketLab.Violet" parent="Theme.JavaPocketLab">
+        <item name="colorPrimary">@color/violet_primary</item>
+        <item name="colorOnPrimary">@color/violet_on_primary</item>
+        <item name="colorPrimaryContainer">@color/violet_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/violet_on_primary_container</item>
     </style>
 </resources>
