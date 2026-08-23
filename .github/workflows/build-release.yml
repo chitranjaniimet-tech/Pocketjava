@@ -204,5 +204,5 @@ jobs:
           TAG="build-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" PocketJava.apk \
             --target "$GITHUB_SHA" \
-            --title "PocketJava 0.3.1 • Build ${GITHUB_RUN_NUMBER}" \
-            --notes "PocketJava 0.3.1 pins ECJ to Android-compatible 3.18.0 to avoid the javax.lang.model.SourceVersion crash on Android while retaining Java 11 language support. The release is gated by positive/negative branching, Streams/Lambdas, NIO.2 and CompletableFuture compiler regression tests. Published directly to Releases; no GitHub Actions artifact storage is used."
+            --title "PocketJava 0.3.2 • Build ${GITHUB_RUN_NUMBER}" \
+            --notes "PocketJava 0.3.2 adds a learner-first settings screen, reliable keyboard activation for editing pasted code, and automatic plain-English compiler guidance. It retains the Android-compatible ECJ compiler with Java 11 language support. Published directly to Releases; no GitHub Actions artifact storage is used."
