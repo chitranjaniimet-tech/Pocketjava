@@ -13,8 +13,8 @@ android {
         applicationId = "com.moneyclaritytech.javapocketlab"
         minSdk = 26
         targetSdk = 36
-        versionCode = ciVersionCode ?: 3
-        versionName = "0.3.0"
+        versionCode = ciVersionCode ?: 4
+        versionName = "0.3.1"
     }
 
     signingConfigs {
@@ -78,9 +78,11 @@ dependencies {
     implementation("io.github.rosemoe:editor")
     implementation("io.github.rosemoe:language-java")
 
-    // Full Eclipse Compiler for Java. Unlike Janino, ECJ compiles modern Java syntax,
-    // including lambdas, method references, streams-facing source and Java 11 code.
-    implementation("org.eclipse.jdt:ecj:3.46.0")
+    // Android-compatible Eclipse Compiler for Java. ECJ 3.20+ references
+    // javax.lang.model.SourceVersion from the desktop java.compiler module,
+    // which Android does not ship. Eclipse 4.12 / ECJ 3.18.0 is the last
+    // Termux-pinned Android-compatible line and still supports Java 11/12 syntax.
+    implementation("org.eclipse.jdt:ecj:3.18.0")
 
     // D8 converts ECJ-generated JVM .class files into Android DEX at runtime.
     implementation("com.android.tools:r8:8.13.19")
