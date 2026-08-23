@@ -30,10 +30,8 @@ import android.widget.ViewFlipper;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -82,10 +80,10 @@ public final class MainActivity extends AppCompatActivity {
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         applySavedThemeStyle();
         super.onCreate(savedInstanceState);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         setContentView(R.layout.activity_main);
         bindViews();
-        applyInsets();
+        configureSystemBars();
         prefs = getSharedPreferences("ui", MODE_PRIVATE);
         store = new ProjectStore(this);
         terminal = new TerminalEngine(store);
@@ -110,16 +108,12 @@ public final class MainActivity extends AppCompatActivity {
         terminalInput = findViewById(R.id.terminalInput); btnRun = findViewById(R.id.btnRun); btnRunTop = findViewById(R.id.btnRunTop);
     }
 
-    private void applyInsets() {
-        View root = findViewById(R.id.root), topBar = findViewById(R.id.topBar), bottomNav = findViewById(R.id.bottomNav);
-        int topBase = dp(8), bottomBase = dp(4);
-        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            topBar.setPadding(topBar.getPaddingLeft(), topBase + sys.top, topBar.getPaddingRight(), topBar.getPaddingBottom());
-            bottomNav.setPadding(bottomNav.getPaddingLeft(), bottomNav.getPaddingTop(), bottomNav.getPaddingRight(), bottomBase + sys.bottom);
-            return insets;
-        });
-        ViewCompat.requestApplyInsets(root);
+    private void configureSystemBars() {
+        boolean dark = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat bars = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        bars.setAppearanceLightStatusBars(!dark);
+        bars.setAppearanceLightNavigationBars(!dark);
     }
 
     private void configureEditor() {
