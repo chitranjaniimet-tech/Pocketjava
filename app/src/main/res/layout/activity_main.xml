@@ -30,7 +30,7 @@
             <HorizontalScrollView android:id="@+id/tabScroll" android:layout_width="match_parent" android:layout_height="42dp" android:scrollbars="none" android:background="?attr/colorSurfaceContainerLow">
                 <LinearLayout android:id="@+id/tabRow" android:layout_width="wrap_content" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp" />
             </HorizontalScrollView>
-            <io.github.rosemoe.sora.widget.CodeEditor android:id="@+id/editor" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:background="@color/editor_dark" />
+            <io.github.rosemoe.sora.widget.CodeEditor android:id="@+id/editor" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:background="?attr/colorSurface" />
             <HorizontalScrollView android:layout_width="match_parent" android:layout_height="46dp" android:scrollbars="none" android:background="?attr/colorSurfaceContainer">
                 <LinearLayout android:id="@+id/symbolBar" android:layout_width="wrap_content" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="6dp" />
             </HorizontalScrollView>
@@ -55,17 +55,17 @@
             <LinearLayout android:id="@+id/learnContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="12dp" android:paddingBottom="24dp" />
         </ScrollView>
 
-        <LinearLayout android:id="@+id/pageConsole" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/console_dark">
+        <LinearLayout android:id="@+id/pageConsole" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="?attr/colorSurface">
             <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="12dp" android:paddingEnd="8dp">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Console &amp; shell" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="16sp" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Console &amp; shell" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="16sp" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/btnClearConsole" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Clear" android:textAllCaps="false" />
             </LinearLayout>
             <ScrollView android:id="@+id/consoleScroll" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
-                <TextView android:id="@+id/consoleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp" android:textColor="#DCE4F4" android:textSize="14sp" android:fontFamily="monospace" android:textIsSelectable="true" android:text="PocketJava shell&#10;Type 'help' for learner commands, or use normal shell commands.&#10;&#10;" />
+                <TextView android:id="@+id/consoleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp" android:textColor="?attr/colorOnSurface" android:textSize="15sp" android:fontFamily="monospace" android:textIsSelectable="true" android:text="PocketJava shell&#10;Type 'help' for learner commands, or use normal shell commands.&#10;&#10;" />
             </ScrollView>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="8dp">
-                <EditText android:id="@+id/terminalInput" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:hint="command…" android:textColor="#FFFFFF" android:textColorHint="#8992A5" android:singleLine="true" android:imeOptions="actionDone" android:fontFamily="monospace" android:backgroundTint="@color/brand_secondary" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnTerminalSend" android:layout_width="72dp" android:layout_height="48dp" android:layout_marginStart="8dp" android:text="Enter" android:textAllCaps="false" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingTop="8dp" android:paddingEnd="16dp" android:paddingBottom="12dp">
+                <EditText android:id="@+id/terminalInput" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:hint="Type a command…" android:textColor="?attr/colorOnSurface" android:textColorHint="?attr/colorOnSurfaceVariant" android:singleLine="true" android:imeOptions="actionDone" android:fontFamily="monospace" android:backgroundTint="?attr/colorPrimary" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnTerminalSend" android:layout_width="56dp" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="↵" android:textSize="22sp" android:textAllCaps="false" android:contentDescription="Run command" />
             </LinearLayout>
         </LinearLayout>
 
