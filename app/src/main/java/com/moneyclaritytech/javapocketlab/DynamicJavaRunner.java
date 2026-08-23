@@ -110,7 +110,7 @@ public final class DynamicJavaRunner {
             if (!compiled) {
                 String diagnostics = asUtf8(captured).trim();
                 if (diagnostics.isEmpty()) diagnostics = "Compilation failed without diagnostics.";
-                return RunResult.error(diagnostics, elapsed(start));
+                return RunResult.error(JavaErrorCoach.addGuidance(source, diagnostics), elapsed(start));
             }
 
             File classesJar = new File(runDir, "program.jar");
