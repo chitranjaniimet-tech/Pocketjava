@@ -13,9 +13,11 @@ import android.os.ResultReceiver;
 import android.provider.OpenableColumns;
 import android.database.Cursor;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -62,7 +64,7 @@ public final class MainActivity extends AppCompatActivity {
 
     private CodeEditor editor;
     private ViewFlipper pages;
-    private LinearLayout tabRow, symbolBar, learnContainer, toolsContainer;
+    private LinearLayout tabRow, symbolBar, learnContainer, toolsContainer, settingsContainer;
     private TextView subtitle, consoleText, consolePreview;
     private ScrollView consoleScroll;
     private EditText terminalInput;
@@ -92,6 +94,7 @@ public final class MainActivity extends AppCompatActivity {
         buildSymbolBar();
         buildLessons();
         buildTools();
+        buildSettings();
         initializeProject();
         handleViewIntent(getIntent());
     }
@@ -99,7 +102,7 @@ public final class MainActivity extends AppCompatActivity {
     private void bindViews() {
         editor = findViewById(R.id.editor); pages = findViewById(R.id.pages);
         tabRow = findViewById(R.id.tabRow); symbolBar = findViewById(R.id.symbolBar);
-        learnContainer = findViewById(R.id.learnContainer); toolsContainer = findViewById(R.id.toolsContainer);
+        learnContainer = findViewById(R.id.learnContainer); toolsContainer = findViewById(R.id.toolsContainer); settingsContainer = findViewById(R.id.settingsContainer);
         subtitle = findViewById(R.id.subtitle); consoleText = findViewById(R.id.consoleText);
         consolePreview = findViewById(R.id.consolePreview); consoleScroll = findViewById(R.id.consoleScroll);
         terminalInput = findViewById(R.id.terminalInput); btnRun = findViewById(R.id.btnRun); btnRunTop = findViewById(R.id.btnRunTop);
@@ -135,7 +138,15 @@ public final class MainActivity extends AppCompatActivity {
         optional(editor, "setTextSize", new Class<?>[]{float.class}, (float) prefs.getInt("font", 15));
         optional(editor, "setWordwrap", new Class<?>[]{boolean.class}, prefs.getBoolean("wrap", false));
         optional(editor, "setLineNumberEnabled", new Class<?>[]{boolean.class}, prefs.getBoolean("lines", true));
-        editor.setOnFocusChangeListener((v, hasFocus) -> { if (!hasFocus && !loadingEditor) markDirty(); });
+        editor.setFocusableInTouchMode(true);
+        editor.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) showEditorKeyboard();
+            else if (!loadingEditor) markDirty();
+        });
+        editor.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) showEditorKeyboard();
+            return false;
+        });
     }
 
     private void configureNavigation() {
@@ -143,6 +154,7 @@ public final class MainActivity extends AppCompatActivity {
         findViewById(R.id.navLearn).setOnClickListener(v -> showPage(1));
         findViewById(R.id.navConsole).setOnClickListener(v -> showPage(2));
         findViewById(R.id.navTools).setOnClickListener(v -> showPage(3));
+        findViewById(R.id.navSettings).setOnClickListener(v -> showPage(4));
         showPage(0);
     }
 
@@ -155,6 +167,8 @@ public final class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnFormat).setOnClickListener(v -> formatActive());
         findViewById(R.id.btnDocs).setOnClickListener(v -> showDocs());
         findViewById(R.id.btnMore).setOnClickListener(this::showMoreMenu);
+        findViewById(R.id.btnKeyboard).setOnClickListener(v -> showEditorKeyboard());
+        findViewById(R.id.btnSettings).setOnClickListener(v -> showPage(4));
         findViewById(R.id.btnClearConsole).setOnClickListener(v -> { consoleText.setText(""); consolePreview.setText("Console cleared"); });
         findViewById(R.id.btnTerminalSend).setOnClickListener(v -> executeTerminal());
         terminalInput.setOnEditorActionListener((v, actionId, event) -> { if (actionId == EditorInfo.IME_ACTION_DONE) { executeTerminal(); return true; } return false; });
@@ -197,6 +211,83 @@ public final class MainActivity extends AppCompatActivity {
         addTool("Editor settings", "Font size, word wrap, line numbers and appearance.", this::showEditorSettings);
         addTool("Java quick docs", "Offline reminders for common Java syntax and classes.", this::showDocs);
         addTool("Compatibility & licenses", "See exactly what this build implements.", this::showCompatibility);
+    }
+
+    private void buildSettings() {
+        settingsContainer.removeAllViews();
+        settingsContainer.addView(heading("Settings"));
+        settingsContainer.addView(body("Make PocketJava comfortable for your phone and the way you learn. Changes are saved automatically."));
+
+        MaterialCardView editorCard = card();
+        LinearLayout editorBox = column(dp(14));
+        editorBox.addView(heading("Editor"));
+        editorBox.addView(body("Choose a readable coding layout."));
+        SwitchMaterial wrap = new SwitchMaterial(this);
+        wrap.setText("Word wrap");
+        wrap.setChecked(prefs.getBoolean("wrap", false));
+        wrap.setOnCheckedChangeListener((button, checked) -> {
+            prefs.edit().putBoolean("wrap", checked).apply();
+            optional(editor, "setWordwrap", new Class<?>[]{boolean.class}, checked);
+        });
+        editorBox.addView(wrap);
+        SwitchMaterial lines = new SwitchMaterial(this);
+        lines.setText("Show line numbers");
+        lines.setChecked(prefs.getBoolean("lines", true));
+        lines.setOnCheckedChangeListener((button, checked) -> {
+            prefs.edit().putBoolean("lines", checked).apply();
+            optional(editor, "setLineNumberEnabled", new Class<?>[]{boolean.class}, checked);
+        });
+        editorBox.addView(lines);
+        TextView fontLabel = body("Code size: " + prefs.getInt("font", 15) + " sp");
+        editorBox.addView(fontLabel);
+        SeekBar font = new SeekBar(this);
+        font.setMax(12);
+        font.setProgress(prefs.getInt("font", 15) - 12);
+        font.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int size = 12 + progress;
+                fontLabel.setText("Code size: " + size + " sp");
+                if (fromUser) {
+                    prefs.edit().putInt("font", size).apply();
+                    optional(editor, "setTextSize", new Class<?>[]{float.class}, (float) size);
+                }
+            }
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+        editorBox.addView(font);
+        editorCard.addView(editorBox);
+        settingsContainer.addView(editorCard, cardParams());
+
+        MaterialCardView inputCard = card();
+        LinearLayout inputBox = column(dp(14));
+        inputBox.addView(heading("Keyboard & input"));
+        inputBox.addView(body("Tap the code area or use this button whenever you have pasted code and want to edit it. The keyboard is deliberately available from every screen."));
+        MaterialButton keyboard = actionButton("Show keyboard");
+        keyboard.setOnClickListener(v -> showEditorKeyboard());
+        inputBox.addView(keyboard);
+        inputCard.addView(inputBox);
+        settingsContainer.addView(inputCard, cardParams());
+
+        MaterialCardView learningCard = card();
+        LinearLayout learningBox = column(dp(14));
+        learningBox.addView(heading("Learning help"));
+        learningBox.addView(body("Every compile failure now opens PocketJava Fix Guide automatically. It explains the first error in plain English and tells you what to change. Full technical details remain in Console."));
+        MaterialButton guide = actionButton("Open last compiler result");
+        guide.setOnClickListener(v -> showPage(2));
+        learningBox.addView(guide);
+        learningCard.addView(learningBox);
+        settingsContainer.addView(learningCard, cardParams());
+
+        MaterialCardView appearanceCard = card();
+        LinearLayout appearanceBox = column(dp(14));
+        appearanceBox.addView(heading("Appearance"));
+        appearanceBox.addView(body("Switch between light and dark mode. The editor colours adapt with the app."));
+        MaterialButton theme = actionButton("Toggle light / dark");
+        theme.setOnClickListener(v -> toggleTheme());
+        appearanceBox.addView(theme);
+        appearanceCard.addView(appearanceBox);
+        settingsContainer.addView(appearanceCard, cardParams());
     }
 
     private void addTool(String title, String text, Runnable action) {
@@ -274,6 +365,7 @@ public final class MainActivity extends AppCompatActivity {
             running = false; updateRunButtons(); String out = resultData == null ? "" : resultData.getString("output", ""); long ms = resultData == null ? 0 : resultData.getLong("durationMs", 0); boolean ok = resultCode == CodeRunnerService.RESULT_OK;
             if (resultCode == CodeRunnerService.RESULT_TIMEOUT) out += "\n[Stopped by safety watchdog]";
             appendConsole(out.isEmpty() ? "(no output)\n" : out + (out.endsWith("\n") ? "" : "\n")); appendConsole((ok ? "✓ Finished" : "✕ Failed") + (ms > 0 ? " in " + ms + " ms" : "") + "\n");
+            if (!ok) showFixGuide(out);
             if (callback != null) callback.complete(ok, out, ms);
         }};
         Intent i = new Intent(this, CodeRunnerService.class); i.setAction(CodeRunnerService.ACTION_RUN); i.putExtra(CodeRunnerService.EXTRA_SOURCE, source); i.putExtra(CodeRunnerService.EXTRA_STDIN, stdin == null ? "" : stdin); i.putStringArrayListExtra(CodeRunnerService.EXTRA_DEPS, deps); i.putExtra(CodeRunnerService.EXTRA_RECEIVER, receiver); startService(i);
@@ -289,6 +381,23 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void appendConsole(String s) { consoleText.append(s); String clean = s == null ? "" : s.trim(); if (!clean.isEmpty()) { String[] lines = clean.split("\n"); consolePreview.setText(lines[lines.length - 1]); } consoleScroll.post(() -> consoleScroll.fullScroll(View.FOCUS_DOWN)); }
+
+    private void showFixGuide(String output) {
+        String text = output == null || output.trim().isEmpty() ? "The run failed without an error message." : output;
+        TextView guide = codeBlock(text);
+        guide.setTextSize(12);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("PocketJava Fix Guide")
+                .setMessage("Start with the first error. The guide below explains what to change; the technical compiler log is kept for reference.")
+                .setView(wrapScroll(guide))
+                .setNegativeButton("Close", null)
+                .setNeutralButton("Open console", (d, w) -> showPage(2))
+                .setPositiveButton("Back to code", (d, w) -> {
+                    showPage(0);
+                    showEditorKeyboard();
+                })
+                .show();
+    }
 
     private void showExamples() {
         Map<String, String> examples = ExampleRepository.examples(); String[] names = examples.keySet().toArray(new String[0]);
@@ -349,13 +458,22 @@ public final class MainActivity extends AppCompatActivity {
     private void toggleTheme() { int current = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK; AppCompatDelegate.setDefaultNightMode(current == android.content.res.Configuration.UI_MODE_NIGHT_YES ? AppCompatDelegate.MODE_NIGHT_NO : AppCompatDelegate.MODE_NIGHT_YES); }
 
     private void insertAtCursor(String text) {
+        showEditorKeyboard();
         try { Object cursor = editor.getClass().getMethod("getCursor").invoke(editor); int line = ((Number) cursor.getClass().getMethod("getLeftLine").invoke(cursor)).intValue(); int col = ((Number) cursor.getClass().getMethod("getLeftColumn").invoke(cursor)).intValue(); Object content = editor.getText(); Method insert = content.getClass().getMethod("insert", int.class, int.class, CharSequence.class); insert.invoke(content, line, col, text); markDirty(); return; } catch (Throwable ignored) {}
         setEditorText(editorText() + text); markDirty();
     }
 
     private String editorText() { return editor.getText() == null ? "" : editor.getText().toString(); }
     private void setEditorText(String text) { loadingEditor = true; editor.setText(text == null ? "" : text); loadingEditor = false; }
-    private void showPage(int index) { pages.setDisplayedChild(index); int[] ids = {R.id.navEditor, R.id.navLearn, R.id.navConsole, R.id.navTools}; for (int i = 0; i < ids.length; i++) { View v = findViewById(ids[i]); if (v instanceof MaterialButton) ((MaterialButton) v).setChecked(i == index); } }
+    private void showEditorKeyboard() {
+        if (pages.getDisplayedChild() != 0) showPage(0);
+        editor.requestFocus();
+        editor.postDelayed(() -> {
+            InputMethodManager keyboard = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (keyboard != null) keyboard.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
+        }, 120);
+    }
+    private void showPage(int index) { pages.setDisplayedChild(index); int[] ids = {R.id.navEditor, R.id.navLearn, R.id.navConsole, R.id.navTools, R.id.navSettings}; for (int i = 0; i < ids.length; i++) { View v = findViewById(ids[i]); if (v instanceof MaterialButton) ((MaterialButton) v).setChecked(i == index); } }
     private void saveCurrentQuietly() { if (currentFile == null) return; try { store.write(currentFile.getName(), editorText()); dirty = false; updateSubtitle(); } catch (Exception ignored) {} }
 
     @Override protected void onPause() { saveCurrentQuietly(); super.onPause(); }
