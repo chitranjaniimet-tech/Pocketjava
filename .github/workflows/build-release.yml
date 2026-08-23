@@ -223,5 +223,5 @@ jobs:
           TAG="build-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" PocketJava.apk \
             --target "$GITHUB_SHA" \
-            --title "PocketJava 0.3.4 • Build ${GITHUB_RUN_NUMBER}" \
-            --notes "PocketJava 0.3.4 consolidates Material colour tokens for reliable dark-mode contrast, improves the responsive console input, and adds selectable blue, midnight, forest and violet themes. Published directly to Releases; no GitHub Actions artifact storage is used."
+            --title "PocketJava 0.3.5 • Build ${GITHUB_RUN_NUMBER}" \
+            --notes "PocketJava 0.3.5 uses safe system-bar insets and keyboard resize behaviour, and makes the terminal command action explicit. Published directly to Releases; no GitHub Actions artifact storage is used."
