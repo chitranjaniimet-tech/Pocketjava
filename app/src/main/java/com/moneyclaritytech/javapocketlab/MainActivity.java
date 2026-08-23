@@ -154,21 +154,16 @@ public final class MainActivity extends AppCompatActivity {
         findViewById(R.id.navLearn).setOnClickListener(v -> showPage(1));
         findViewById(R.id.navConsole).setOnClickListener(v -> showPage(2));
         findViewById(R.id.navTools).setOnClickListener(v -> showPage(3));
-        findViewById(R.id.navSettings).setOnClickListener(v -> showPage(4));
         showPage(0);
     }
 
     private void configureActions() {
         btnRun.setOnClickListener(v -> runActiveSource()); btnRunTop.setOnClickListener(v -> runActiveSource());
-        findViewById(R.id.btnSaveTop).setOnClickListener(v -> saveCurrent());
-        findViewById(R.id.btnNew).setOnClickListener(v -> promptNewFile());
+        findViewById(R.id.btnKeyboard).setOnClickListener(v -> showEditorKeyboard());
         findViewById(R.id.btnOpenConsole).setOnClickListener(v -> showPage(2));
         findViewById(R.id.btnFiles).setOnClickListener(v -> showFilesDialog());
         findViewById(R.id.btnFormat).setOnClickListener(v -> formatActive());
-        findViewById(R.id.btnDocs).setOnClickListener(v -> showDocs());
         findViewById(R.id.btnMore).setOnClickListener(this::showMoreMenu);
-        findViewById(R.id.btnKeyboard).setOnClickListener(v -> showEditorKeyboard());
-        findViewById(R.id.btnSettings).setOnClickListener(v -> showPage(4));
         findViewById(R.id.btnClearConsole).setOnClickListener(v -> { consoleText.setText(""); consolePreview.setText("Console cleared"); });
         findViewById(R.id.btnTerminalSend).setOnClickListener(v -> executeTerminal());
         terminalInput.setOnEditorActionListener((v, actionId, event) -> { if (actionId == EditorInfo.IME_ACTION_DONE) { executeTerminal(); return true; } return false; });
@@ -207,6 +202,7 @@ public final class MainActivity extends AppCompatActivity {
         addTool("Java REPL", "Try short Java statements and keep earlier statements in the session.", this::showRepl);
         addTool("Maven libraries", "Add common Maven Central JARs with group:artifact:version.", this::showMaven);
         addTool("Project files", "Create, import, rename, switch and delete Java files.", this::showFilesDialog);
+        addTool("Settings & preferences", "A dedicated screen for code size, layout, keyboard behaviour and appearance.", () -> showPage(4));
         addTool("Console & shell", "Learner commands plus normal Android shell commands inside the app sandbox.", () -> showPage(2));
         addTool("Editor settings", "Font size, word wrap, line numbers and appearance.", this::showEditorSettings);
         addTool("Java quick docs", "Offline reminders for common Java syntax and classes.", this::showDocs);
@@ -296,10 +292,10 @@ public final class MainActivity extends AppCompatActivity {
 
     private void showMoreMenu(View anchor) {
         PopupMenu p = new PopupMenu(this, anchor);
-        String[] items = {"New file", "Import .java", "Save", "Share code", "Rename file", "Delete file", "Undo", "Redo", "Find text", "Toggle light / dark"};
+        String[] items = {"New file", "Import .java", "Save", "Show keyboard", "Settings", "Share code", "Rename file", "Delete file", "Undo", "Redo", "Find text", "Toggle light / dark"};
         for (String item : items) p.getMenu().add(item);
         p.setOnMenuItemClickListener(item -> { switch (String.valueOf(item.getTitle())) {
-            case "New file": promptNewFile(); break; case "Import .java": importJava(); break; case "Save": saveCurrent(); break; case "Share code": shareCode(); break;
+            case "New file": promptNewFile(); break; case "Import .java": importJava(); break; case "Save": saveCurrent(); break; case "Show keyboard": showEditorKeyboard(); break; case "Settings": showPage(4); break; case "Share code": shareCode(); break;
             case "Rename file": promptRename(); break; case "Delete file": confirmDelete(); break; case "Undo": optional(editor, "undo", new Class<?>[0]); markDirty(); break;
             case "Redo": optional(editor, "redo", new Class<?>[0]); markDirty(); break; case "Find text": showFind(); break; case "Toggle light / dark": toggleTheme(); break;
         } return true; }); p.show();
@@ -473,7 +469,7 @@ public final class MainActivity extends AppCompatActivity {
             if (keyboard != null) keyboard.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
         }, 120);
     }
-    private void showPage(int index) { pages.setDisplayedChild(index); int[] ids = {R.id.navEditor, R.id.navLearn, R.id.navConsole, R.id.navTools, R.id.navSettings}; for (int i = 0; i < ids.length; i++) { View v = findViewById(ids[i]); if (v instanceof MaterialButton) ((MaterialButton) v).setChecked(i == index); } }
+    private void showPage(int index) { pages.setDisplayedChild(index); int[] ids = {R.id.navEditor, R.id.navLearn, R.id.navConsole, R.id.navTools}; for (int i = 0; i < ids.length; i++) { View v = findViewById(ids[i]); if (v instanceof MaterialButton) ((MaterialButton) v).setChecked(i == index); } }
     private void saveCurrentQuietly() { if (currentFile == null) return; try { store.write(currentFile.getName(), editorText()); dirty = false; updateSubtitle(); } catch (Exception ignored) {} }
 
     @Override protected void onPause() { saveCurrentQuietly(); super.onPause(); }
