@@ -38,8 +38,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .ci/android-platform
-          mkdir -p .ci/android-platform app/src/main/assets/compiler
+          rm -rf .ci/android-platform .ci/compiler-shim-src .ci/compiler-shim-classes
+          mkdir -p .ci/android-platform .ci/compiler-shim-src/java/lang/invoke \
+            .ci/compiler-shim-classes app/src/main/assets/compiler
           cp "$ANDROID_HOME/platforms/android-36/android.jar" .ci/android-platform/android.jar
           pushd .ci/android-platform >/dev/null
           unzip -q android.jar
@@ -47,6 +48,23 @@ jobs:
           rm -rf res assets
           jar cfM "$GITHUB_WORKSPACE/app/src/main/assets/compiler/android-36.jar" .
           popd >/dev/null
+
+          # android.jar intentionally omits this desktop-Java bootstrap class.
+          # ECJ still resolves it while type-checking java.util.function.Function,
+          # although D8 later desugars lambdas into ordinary Android bytecode.
+          cat > .ci/compiler-shim-src/java/lang/invoke/LambdaMetafactory.java <<'JAVA'
+          package java.lang.invoke;
+
+          /** Compile-time placeholder; never loaded on Android at runtime. */
+          public final class LambdaMetafactory {
+              private LambdaMetafactory() {}
+          }
+          JAVA
+          javac --patch-module java.base=.ci/compiler-shim-src \
+            -d .ci/compiler-shim-classes \
+            .ci/compiler-shim-src/java/lang/invoke/LambdaMetafactory.java
+          jar uf app/src/main/assets/compiler/android-36.jar \
+            -C .ci/compiler-shim-classes java/lang/invoke/LambdaMetafactory.class
           test -s app/src/main/assets/compiler/android-36.jar
           echo "Compiler platform size: $(du -h app/src/main/assets/compiler/android-36.jar | cut -f1)"
 
@@ -63,6 +81,8 @@ jobs:
 
           cat > .ci/compiler-smoke/CompilerStressTest.java <<'JAVA'
           public class CompilerStressTest {
+              interface RecursiveFunction<T> extends java.util.function.Function<RecursiveFunction<T>, T> {}
+
               interface Mapper<T, R> {
                   R map(T value);
               }
@@ -80,6 +100,11 @@ jobs:
                   Mapper<Integer, Integer> square = value -> value * value;
                   int result = square.map(12);
                   if (result != 144) throw new AssertionError("lambda");
+
+                  RecursiveFunction<String> recursive = value -> "works";
+                  if (!"works".equals(recursive.apply(recursive))) {
+                      throw new AssertionError("function lambda");
+                  }
               }
           }
           JAVA
