@@ -13,8 +13,8 @@ android {
         applicationId = "com.moneyclaritytech.javapocketlab"
         minSdk = 26
         targetSdk = 36
-        versionCode = ciVersionCode ?: 4
-        versionName = "0.3.1"
+        versionCode = ciVersionCode ?: 5
+        versionName = "0.3.2"
     }
 
     signingConfigs {
