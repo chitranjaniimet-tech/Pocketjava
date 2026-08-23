@@ -162,6 +162,25 @@ jobs:
           echo "version_code=$CI_VERSION_CODE" >> "$GITHUB_OUTPUT"
           exit 0
 
+      - name: Verify upgrade identity
+        if: steps.build.outputs.status == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          certificate_digest=$("$APKSIGNER" verify --print-certs "$APK" \
+            | sed -n 's/.*SHA-256 digest: //p' \
+            | tr -d ':' \
+            | tr '[:upper:]' '[:lower:]')
+          test "$certificate_digest" = "3d68b0a3eae74e05999f7e32f602fde4fbc465346bce80d575bbde4006d2e332"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='com.moneyclaritytech.javapocketlab.debug'"
+
+          echo "Upgrade identity verified: package ID, signing certificate and monotonic CI version code are stable."
+
       - name: Publish failure diagnostics to one GitHub issue
         if: steps.build.outputs.status != '0'
         shell: bash
