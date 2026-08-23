@@ -64,8 +64,8 @@
                 <TextView android:id="@+id/consoleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp" android:textColor="?attr/colorOnSurface" android:textSize="15sp" android:fontFamily="monospace" android:textIsSelectable="true" android:text="PocketJava shell&#10;Type 'help' for learner commands, or use normal shell commands.&#10;&#10;" />
             </ScrollView>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingTop="8dp" android:paddingEnd="16dp" android:paddingBottom="12dp">
-                <EditText android:id="@+id/terminalInput" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:hint="Type a command…" android:textColor="?attr/colorOnSurface" android:textColorHint="?attr/colorOnSurfaceVariant" android:singleLine="true" android:imeOptions="actionDone" android:fontFamily="monospace" android:backgroundTint="?attr/colorPrimary" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnTerminalSend" android:layout_width="56dp" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="↵" android:textSize="22sp" android:textAllCaps="false" android:contentDescription="Run command" />
+                <EditText android:id="@+id/terminalInput" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:hint="Type a shell command…" android:textColor="?attr/colorOnSurface" android:textColorHint="?attr/colorOnSurfaceVariant" android:singleLine="true" android:imeOptions="actionDone" android:fontFamily="monospace" android:backgroundTint="?attr/colorPrimary" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnTerminalSend" android:layout_width="64dp" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="Go" android:textSize="14sp" android:textAllCaps="false" android:contentDescription="Run shell command" />
             </LinearLayout>
         </LinearLayout>
 
