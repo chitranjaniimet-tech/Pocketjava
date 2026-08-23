@@ -61,6 +61,7 @@ import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 /** Phone-first clean-room Java learning IDE. */
 public final class MainActivity extends AppCompatActivity {
     private static final int REQ_IMPORT_JAVA = 5001;
+    private static final String PREF_THEME_STYLE = "theme_style";
 
     private CodeEditor editor;
     private ViewFlipper pages;
@@ -79,6 +80,7 @@ public final class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
+        applySavedThemeStyle();
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
@@ -278,9 +280,9 @@ public final class MainActivity extends AppCompatActivity {
         MaterialCardView appearanceCard = card();
         LinearLayout appearanceBox = column(dp(14));
         appearanceBox.addView(heading("Appearance"));
-        appearanceBox.addView(body("Switch between light and dark mode. The editor colours adapt with the app."));
-        MaterialButton theme = actionButton("Toggle light / dark");
-        theme.setOnClickListener(v -> toggleTheme());
+        appearanceBox.addView(body("Choose a complete palette and contrast mode. The editor, console, navigation and controls update together."));
+        MaterialButton theme = actionButton("Choose theme");
+        theme.setOnClickListener(v -> showThemePicker());
         appearanceBox.addView(theme);
         appearanceCard.addView(appearanceBox);
         settingsContainer.addView(appearanceCard, cardParams());
@@ -292,12 +294,12 @@ public final class MainActivity extends AppCompatActivity {
 
     private void showMoreMenu(View anchor) {
         PopupMenu p = new PopupMenu(this, anchor);
-        String[] items = {"New file", "Import .java", "Save", "Show keyboard", "Settings", "Share code", "Rename file", "Delete file", "Undo", "Redo", "Find text", "Toggle light / dark"};
+        String[] items = {"New file", "Import .java", "Save", "Show keyboard", "Settings", "Share code", "Rename file", "Delete file", "Undo", "Redo", "Find text", "Theme & appearance"};
         for (String item : items) p.getMenu().add(item);
         p.setOnMenuItemClickListener(item -> { switch (String.valueOf(item.getTitle())) {
             case "New file": promptNewFile(); break; case "Import .java": importJava(); break; case "Save": saveCurrent(); break; case "Show keyboard": showEditorKeyboard(); break; case "Settings": showPage(4); break; case "Share code": shareCode(); break;
             case "Rename file": promptRename(); break; case "Delete file": confirmDelete(); break; case "Undo": optional(editor, "undo", new Class<?>[0]); markDirty(); break;
-            case "Redo": optional(editor, "redo", new Class<?>[0]); markDirty(); break; case "Find text": showFind(); break; case "Toggle light / dark": toggleTheme(); break;
+            case "Redo": optional(editor, "redo", new Class<?>[0]); markDirty(); break; case "Find text": showFind(); break; case "Theme & appearance": showThemePicker(); break;
         } return true; }); p.show();
     }
 
@@ -451,7 +453,46 @@ public final class MainActivity extends AppCompatActivity {
         EditText input = dialogInput("Search in current file"); new MaterialAlertDialogBuilder(this).setTitle("Find text").setView(input).setNegativeButton("Cancel", null).setPositiveButton("Find", (d, w) -> { String q = input.getText().toString(), source = editorText(); int index = source.indexOf(q); if (q.isEmpty() || index < 0) { toast("Text not found"); return; } int line = 0, col = 0; for (int i = 0; i < index; i++) { if (source.charAt(i) == '\n') { line++; col = 0; } else col++; } if (!invokeBoolean(editor, "setSelection", new Class<?>[]{int.class, int.class}, line, col)) toast("Found at line " + (line + 1)); showPage(0); }).show();
     }
 
-    private void toggleTheme() { int current = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK; AppCompatDelegate.setDefaultNightMode(current == android.content.res.Configuration.UI_MODE_NIGHT_YES ? AppCompatDelegate.MODE_NIGHT_NO : AppCompatDelegate.MODE_NIGHT_YES); }
+    private void applySavedThemeStyle() {
+        String style = getSharedPreferences("ui", MODE_PRIVATE).getString(PREF_THEME_STYLE, "blue_system");
+        if ("forest_dark".equals(style)) setTheme(R.style.Theme_JavaPocketLab_Forest);
+        else if ("violet_dark".equals(style)) setTheme(R.style.Theme_JavaPocketLab_Violet);
+        else setTheme(R.style.Theme_JavaPocketLab);
+    }
+
+    private void showThemePicker() {
+        String[] labels = {
+                "Classic blue — follow system",
+                "Paper blue — light",
+                "Midnight blue — dark",
+                "Forest — dark",
+                "Violet — dark"
+        };
+        String current = prefs.getString(PREF_THEME_STYLE, "blue_system");
+        int selected = "blue_light".equals(current) ? 1
+                : "blue_dark".equals(current) ? 2
+                : "forest_dark".equals(current) ? 3
+                : "violet_dark".equals(current) ? 4 : 0;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Choose theme")
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    String style;
+                    int mode;
+                    switch (which) {
+                        case 1: style = "blue_light"; mode = AppCompatDelegate.MODE_NIGHT_NO; break;
+                        case 2: style = "blue_dark"; mode = AppCompatDelegate.MODE_NIGHT_YES; break;
+                        case 3: style = "forest_dark"; mode = AppCompatDelegate.MODE_NIGHT_YES; break;
+                        case 4: style = "violet_dark"; mode = AppCompatDelegate.MODE_NIGHT_YES; break;
+                        default: style = "blue_system"; mode = AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM; break;
+                    }
+                    prefs.edit().putString(PREF_THEME_STYLE, style).apply();
+                    dialog.dismiss();
+                    AppCompatDelegate.setDefaultNightMode(mode);
+                    recreate();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
 
     private void insertAtCursor(String text) {
         showEditorKeyboard();
@@ -475,7 +516,17 @@ public final class MainActivity extends AppCompatActivity {
     @Override protected void onPause() { saveCurrentQuietly(); super.onPause(); }
     @Override protected void onDestroy() { if (running) stopRunner(); ioWorker.shutdownNow(); try { editor.release(); } catch (Throwable ignored) {} super.onDestroy(); }
 
-    private MaterialCardView card() { MaterialCardView c = new MaterialCardView(this); c.setRadius(dp(18)); c.setCardElevation(0); c.setStrokeWidth(dp(1)); c.setStrokeColor(0x22000000); return c; }
+    private MaterialCardView card() {
+        boolean dark = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        MaterialCardView c = new MaterialCardView(this);
+        c.setRadius(dp(18));
+        c.setCardElevation(0);
+        c.setCardBackgroundColor(dark ? 0xFF1C1D24 : 0xFFFFFFFF);
+        c.setStrokeWidth(dp(1));
+        c.setStrokeColor(dark ? 0xFF30313A : 0x16000000);
+        return c;
+    }
     private LinearLayout.LayoutParams cardParams() { LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); p.topMargin = dp(10); return p; }
     private LinearLayout column(int padding) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); l.setPadding(padding, padding, padding, padding); return l; }
     private TextView heading(String text) { TextView t = new TextView(this); t.setText(text); t.setTextSize(20); t.setTypeface(Typeface.DEFAULT, Typeface.BOLD); t.setPadding(0, 0, 0, dp(6)); return t; }
