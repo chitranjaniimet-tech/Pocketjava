@@ -50,6 +50,72 @@ jobs:
           test -s app/src/main/assets/compiler/android-36.jar
           echo "Compiler platform size: $(du -h app/src/main/assets/compiler/android-36.jar | cut -f1)"
 
+      - name: Java compiler regression test
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .ci/compiler-smoke
+          mkdir -p .ci/compiler-smoke/classes
+
+          curl -fsSL \
+            "https://repo.maven.apache.org/maven2/org/eclipse/jdt/ecj/3.18.0/ecj-3.18.0.jar" \
+            -o .ci/compiler-smoke/ecj.jar
+
+          cat > .ci/compiler-smoke/CompilerStressTest.java <<'JAVA'
+          import java.nio.file.Files;
+          import java.nio.file.Path;
+          import java.util.Arrays;
+          import java.util.List;
+          import java.util.concurrent.CompletableFuture;
+          import java.util.stream.Collectors;
+
+          public class CompilerStressTest {
+              public static void main(String[] args) throws Exception {
+                  double number = 12.3;
+                  if (number < 0.0) {
+                      throw new AssertionError("negative branch");
+                  } else if (number > 0.0) {
+                      System.out.println(number + " is a positive number.");
+                  } else {
+                      throw new AssertionError("zero branch");
+                  }
+
+                  List<String> filtered = Arrays.asList("apple", "banana", "cherry", "date")
+                          .stream()
+                          .filter(s -> s.startsWith("b") || s.startsWith("c"))
+                          .map(String::toUpperCase)
+                          .collect(Collectors.toList());
+                  if (filtered.size() != 2 || !filtered.contains("BANANA")) {
+                      throw new AssertionError("streams/lambdas");
+                  }
+
+                  Path p = Path.of("compiler_test_temp.txt");
+                  Files.writeString(p, "Java Compiler Verification");
+                  if (!"Java Compiler Verification".equals(Files.readString(p))) {
+                      throw new AssertionError("nio");
+                  }
+                  Files.deleteIfExists(p);
+
+                  CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
+                      int sum = 0;
+                      for (int i = 1; i <= 100; i++) sum += i;
+                      return sum;
+                  });
+                  if (future.get() != 5050) throw new AssertionError("future");
+              }
+          }
+          JAVA
+
+          java -jar .ci/compiler-smoke/ecj.jar \
+            -proc:none \
+            -source 11 \
+            -target 11 \
+            -nowarn \
+            -d .ci/compiler-smoke/classes \
+            -classpath app/src/main/assets/compiler/android-36.jar \
+            .ci/compiler-smoke/CompilerStressTest.java
+
+          java -cp .ci/compiler-smoke/classes CompilerStressTest
 
       - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
@@ -131,5 +197,5 @@ jobs:
           TAG="build-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" PocketJava.apk \
             --target "$GITHUB_SHA" \
-            --title "PocketJava 0.3.0 • Build ${GITHUB_RUN_NUMBER}" \
-            --notes "PocketJava 0.3 replaces Janino with the Eclipse Compiler for Java (ECJ), bundles Android 16/API 36 compile-time stubs, and gates publication with the advanced Streams/Lambda/NIO.2/CompletableFuture regression test. Upgradeable debug signing remains stable. Published directly to Releases; no GitHub Actions artifact storage is used."
+            --title "PocketJava 0.3.1 • Build ${GITHUB_RUN_NUMBER}" \
+            --notes "PocketJava 0.3.1 pins ECJ to Android-compatible 3.18.0 to avoid the javax.lang.model.SourceVersion crash on Android while retaining Java 11 language support. The release is gated by positive/negative branching, Streams/Lambdas, NIO.2 and CompletableFuture compiler regression tests. Published directly to Releases; no GitHub Actions artifact storage is used."
