@@ -10,9 +10,10 @@ PocketJava is a clean-room project and does not contain Jvdroid source code, bun
 
 ## Eclipse Compiler for Java (ECJ)
 - Project: Eclipse JDT Core
-- Version: 3.46.0
+- Version: 3.18.0 (Eclipse 4.12 line)
 - License: Eclipse Public License 2.0
-- Used as the on-device Java compiler for modern Java source, including lambdas and Java 11 language-level compilation.
+- Used as the on-device Java compiler for Java 11 language-level compilation.
+- This Android-compatible compiler line avoids the desktop `java.compiler` / `javax.lang.model.SourceVersion` dependency introduced in newer ECJ lines that is unavailable on Android's runtime.
 
 ## Android API 36 compile-time stubs
 - Source: Android SDK platform android-36 `android.jar`
