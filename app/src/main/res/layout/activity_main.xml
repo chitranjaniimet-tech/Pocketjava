@@ -17,14 +17,11 @@
         android:paddingEnd="8dp"
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-            <TextView android:id="@+id/title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PocketJava" android:textStyle="bold" android:textSize="19sp" />
-            <TextView android:id="@+id/subtitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Main.java • saved" android:textSize="12sp" android:alpha="0.68" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minWidth="0dp" android:orientation="vertical">
+            <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="PocketJava" android:textStyle="bold" android:textSize="20sp" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/subtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Main.java • saved" android:textSize="12sp" android:alpha="0.68" android:maxLines="1" android:ellipsize="end" />
         </LinearLayout>
-        <com.google.android.material.button.MaterialButton android:id="@+id/btnSaveTop" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Save" android:textAllCaps="false" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/btnRunTop" android:layout_width="wrap_content" android:layout_height="44dp" android:layout_marginStart="2dp" android:text="Run ▶" android:textAllCaps="false" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/btnKeyboard" style="@style/Widget.Material3.Button.TextButton" android:layout_width="44dp" android:layout_height="44dp" android:text="⌨" android:textSize="18sp" android:contentDescription="Show keyboard" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/btnSettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="44dp" android:layout_height="44dp" android:text="⚙" android:textSize="20sp" android:contentDescription="Settings" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnRunTop" android:layout_width="76dp" android:layout_height="44dp" android:layout_marginStart="4dp" android:text="Run" android:textAllCaps="false" />
         <com.google.android.material.button.MaterialButton android:id="@+id/btnMore" style="@style/Widget.Material3.Button.TextButton" android:layout_width="44dp" android:layout_height="44dp" android:text="⋮" android:textSize="22sp" android:contentDescription="More options" />
     </LinearLayout>
 
@@ -47,11 +44,10 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
             <LinearLayout android:layout_width="match_parent" android:layout_height="58dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnNew" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="New" android:textAllCaps="false" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnKeyboard" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="⌨ Type" android:textSize="12sp" android:textAllCaps="false" android:contentDescription="Show keyboard for editing" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/btnFiles" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Files" android:textAllCaps="false" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnFormat" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Format" android:textAllCaps="false" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnDocs" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Docs" android:textAllCaps="false" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnRun" android:layout_width="0dp" android:layout_height="46dp" android:layout_weight="1.3" android:text="Run ▶" android:textAllCaps="false" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnFormat" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Format" android:textSize="12sp" android:textAllCaps="false" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnRun" android:layout_width="0dp" android:layout_height="46dp" android:layout_weight="1.15" android:text="Run" android:textAllCaps="false" />
             </LinearLayout>
         </LinearLayout>
 
@@ -98,6 +94,5 @@
         <com.google.android.material.button.MaterialButton android:id="@+id/navLearn" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:text="Learn" android:textAllCaps="false" android:checkable="true" />
         <com.google.android.material.button.MaterialButton android:id="@+id/navConsole" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:text="Console" android:textAllCaps="false" android:checkable="true" />
         <com.google.android.material.button.MaterialButton android:id="@+id/navTools" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:text="Tools" android:textAllCaps="false" android:checkable="true" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/navSettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:text="Settings" android:textAllCaps="false" android:checkable="true" />
     </com.google.android.material.button.MaterialButtonToggleGroup>
 </LinearLayout>
