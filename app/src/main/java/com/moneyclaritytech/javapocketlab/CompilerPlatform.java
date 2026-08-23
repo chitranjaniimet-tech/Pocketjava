@@ -13,7 +13,8 @@ import java.io.InputStream;
  */
 final class CompilerPlatform {
     private static final String ASSET = "compiler/android-36.jar";
-    private static final String FILE_NAME = "android-api36-compiler.jar";
+    // Bump when compiler stubs change: Android retains app files through an update.
+    private static final String FILE_NAME = "android-api36-compiler-v2.jar";
 
     private CompilerPlatform() {}
 
