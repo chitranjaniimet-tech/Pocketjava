@@ -486,9 +486,9 @@ public final class MainActivity extends AppCompatActivity {
 
     private void applySavedThemeStyle() {
         String style = getSharedPreferences("ui", MODE_PRIVATE).getString(PREF_THEME_STYLE, "blue_system");
-        if ("forest_dark".equals(style)) setTheme(R.style.Theme_JavaPocketLab_Forest);
-        else if ("violet_dark".equals(style)) setTheme(R.style.Theme_JavaPocketLab_Violet);
-        else setTheme(R.style.Theme_JavaPocketLab);
+        if ("forest_dark".equals(style)) setTheme(R.style.Theme_PocketForge_Forest);
+        else if ("violet_dark".equals(style)) setTheme(R.style.Theme_PocketForge_Violet);
+        else setTheme(R.style.Theme_PocketForge);
     }
 
     private void showThemePicker() {
