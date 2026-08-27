@@ -176,7 +176,13 @@ jobs:
             | sed -n 's/.*SHA-256 digest: //p' \
             | tr -d ':' \
             | tr '[:upper:]' '[:lower:]')
-          test "$certificate_digest" = "b73be37720fe5378df423a5088a3e0eb07f00980d318e249601cef81b976abe4"
+          expected_certificate_digest=$(keytool -exportcert \
+            -keystore .ci/pocketforge-debug.jks \
+            -storepass pocketforge-debug-2026 \
+            -alias pocketforge-debug \
+            | openssl dgst -sha256 \
+            | awk '{print $2}')
+          test "$certificate_digest" = "$expected_certificate_digest"
           "$AAPT" dump badging "$APK" | grep -F "package: name='com.moneyclaritytech.pocketforge.debug'"
 
           echo "Upgrade identity verified: package ID, signing certificate and monotonic CI version code are stable."
