@@ -194,7 +194,8 @@ public final class MainActivity extends AppCompatActivity {
     private void buildTools() {
         toolsContainer.removeAllViews(); toolsContainer.addView(heading("Tools"));
         toolsContainer.addView(body("Useful IDE features arranged for a phone instead of a desktop-sized screen."));
-        addTool("Language hub", "Choose a language track, see what runs on-device, and follow the module roadmap.", this::showLanguageHub);\n        addTool("Examples", "Original PocketForge examples for loops, input, arrays, methods and objects.", this::showExamples);
+        addTool("Language hub", "Choose a language track, see what runs on-device, and follow the module roadmap.", this::showLanguageHub);
+        addTool("Examples", "Original PocketForge examples for loops, input, arrays, methods and objects.", this::showExamples);
         addTool("Java REPL", "Try short Java statements and keep earlier statements in the session.", this::showRepl);
         addTool("Maven libraries", "Add common Maven Central JARs with group:artifact:version.", this::showMaven);
         addTool("Project files", "Create, import, rename, switch and delete Java files.", this::showFilesDialog);
