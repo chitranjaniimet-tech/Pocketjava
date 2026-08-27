@@ -1,57 +1,51 @@
-# PocketJava
+# PocketForge
 
-PocketJava is a clean-room, phone-first Java learning IDE for Android. It is designed for people who may have no laptop and want to learn, write, compile and run Java directly on an Android phone.
+PocketForge is a phone-first mobile coding workstation and language-learning platform. It keeps the original PocketJava product separate while providing a larger, modular path for users who want to learn and run multiple programming languages on Android.
 
-## What is in the current build
+## Product direction
 
-- Real on-device Java compilation with Eclipse Compiler for Java (ECJ)
-- Java 11 source/target compilation with Android 16 / API 36 compile-time classes
-- Lambdas, method references, Streams-facing code, CompletableFuture and modern Java syntax
-- NIO.2 APIs available when the Android runtime provides them
-- ECJ class files converted to DEX by D8 and executed on-device
-- Sora mobile code editor with Java syntax highlighting, indentation, tabs and editing support
-- Large one-tap **Run** action with a small output preview so the editor remains visible
-- Multi-file local project, create/import/rename/delete/share
-- Extended Java symbol keyboard row
-- Code formatter, find, undo/redo, light/dark mode and editor settings
-- 10 short beginner lessons with expected output and tiny challenges
-- Original built-in examples (not copied from Jvdroid)
-- Java REPL-style statement runner
-- Maven Central library resolver
-- Console plus Android shell commands inside the app sandbox
-- Offline Java quick docs
-- Scanner/System.in input dialog
-- Separate runner process with a 20-second compile/run watchdog
-- No ads, no ad SDK, no analytics SDK and no in-app purchase SDK
+PocketForge combines:
 
-## Compiler regression gate
+- A comfortable mobile code editor
+- A real terminal inside the Android app sandbox
+- Local project and file management
+- Guided lessons, examples and challenges
+- On-device execution where an Android-compatible runtime is available
+- Downloadable language modules rather than one oversized base APK
+- Git, package and workspace integrations as the platform matures
 
-The GitHub release workflow compiles and executes an advanced Java regression program before building the APK. It covers lambdas, method references, Streams, NIO.2 and CompletableFuture. A release is not published if this compiler regression fails.
+## Language platform
 
-## Jvdroid feature target
+Java is the first built-in compiler because it is already implemented and tested on-device. The language registry is deliberately independent from the Java runner and is ready for:
 
-The product target is the publicly advertised Jvdroid workflow: offline Java, libraries/Maven, examples, terminal, REPL, strong mobile editor, Javadocs, formatter, programming keyboard, themes, tabs and sharing. PocketJava implements these workflows with its own design and code. It does **not** copy Jvdroid source, bundled examples, artwork or branding.
+- Python
+- C and C++
+- JavaScript and Node.js
+- Kotlin
+- Go
+- Rust
+- PHP
+- Shell scripting
 
-PocketJava now uses the full Eclipse Java compiler rather than Janino. It is still not a bundled desktop OpenJDK distribution; real OpenJDK JShell/Nailgun and Kotlin/Scala/Clojure toolchains remain separate future modules.
+Each future module will provide its own editor mode, runtime, package manager, examples, learning path and safety limits. A module can be installed or removed without changing the core application.
 
-## APK: GitHub Releases only
+## Branch separation
 
-The repository intentionally does **not** use `actions/upload-artifact`. GitHub Actions builds an installable debug-signed APK and attaches `PocketJava.apk` directly to a GitHub Release. This avoids GitHub Actions artifact-storage quota.
+This branch is `pocketforge-platform`. It is intentionally independent from the existing PocketJava branch. PocketJava remains the Java-focused product. These branches must not be merged unless the owner explicitly requests it.
 
-All CI debug builds use the same persistent signing identity and an increasing versionCode, so builds created after the persistent signing change can update one another without uninstalling the app.
+## Current foundation
 
-Open the repository **Releases** page and download `PocketJava.apk` from the newest release.
+- PocketForge application ID: `com.moneyclaritytech.pocketforge`
+- Separate debug signing identity from PocketJava
+- Java compiler and runner carried forward as the first language module
+- Language hub and module registry
+- Mobile editor, lessons, examples, files, formatter, REPL, terminal and settings
+- No ads, trackers or in-app purchase SDK
 
-## Build configuration
+## Build
 
-- Android Gradle Plugin 8.13.2
-- Gradle 8.13 in CI
-- JDK 17 in CI
-- Eclipse Compiler for Java 3.46.0
-- Google R8 / D8 8.13.19
-- compileSdk / targetSdk 36
-- minSdk 26
+The GitHub Actions workflow builds `PocketForge.apk` and publishes it directly to a GitHub Release. Its signing identity and package ID are independent from PocketJava, so both apps can be installed together.
 
-## Third-party components
+## License
 
-See `THIRD_PARTY_NOTICES.md`. The app itself is Apache-2.0 licensed.
+See `LICENSE` and `THIRD_PARTY_NOTICES.md`.

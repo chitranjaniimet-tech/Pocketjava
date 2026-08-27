@@ -1,4 +1,4 @@
-package com.moneyclaritytech.javapocketlab;
+package com.moneyclaritytech.pocketforge;
 
 public final class JavaFormatter {
     private JavaFormatter() {}

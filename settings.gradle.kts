@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "JavaPocketLab"
+rootProject.name = "PocketForge"
 include(":app")

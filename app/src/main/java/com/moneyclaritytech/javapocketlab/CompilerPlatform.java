@@ -1,4 +1,4 @@
-package com.moneyclaritytech.javapocketlab;
+package com.moneyclaritytech.pocketforge;
 
 import android.content.Context;
 

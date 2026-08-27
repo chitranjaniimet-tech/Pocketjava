@@ -1,4 +1,4 @@
-name: Build PocketJava Release
+name: Build PocketForge Release
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: pocketjava-release-${{ github.ref }}
+  group: pocketforge-release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -129,16 +129,16 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Restore persistent PocketJava debug signing key
+      - name: Restore persistent PocketForge debug signing key
         shell: bash
         run: |
           mkdir -p .ci
-          base64 --decode .ci/pocketjava-debug.keystore.b64 > .ci/pocketjava-debug.jks
-          chmod 600 .ci/pocketjava-debug.jks
+          base64 --decode .ci/pocketforge-debug.keystore.b64 > .ci/pocketforge-debug.jks
+          chmod 600 .ci/pocketforge-debug.jks
           keytool -list \
-            -keystore .ci/pocketjava-debug.jks \
-            -storepass pocketjava-debug-2026 \
-            -alias pocketjava-debug >/dev/null
+            -keystore .ci/pocketforge-debug.jks \
+            -storepass pocketforge-debug-2026 \
+            -alias pocketforge-debug >/dev/null
 
       - name: Verify build environment
         run: |
@@ -155,7 +155,7 @@ jobs:
           CI_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
           gradle --no-daemon --stacktrace --warning-mode all \
             -PciVersionCode="$CI_VERSION_CODE" \
-            -PpocketJavaDebugKeystore="$GITHUB_WORKSPACE/.ci/pocketjava-debug.jks" \
+            -PpocketForgeDebugKeystore="$GITHUB_WORKSPACE/.ci/pocketforge-debug.jks" \
             :app:assembleDebug 2>&1 | tee build.log
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_OUTPUT"
@@ -176,8 +176,8 @@ jobs:
             | sed -n 's/.*SHA-256 digest: //p' \
             | tr -d ':' \
             | tr '[:upper:]' '[:lower:]')
-          test "$certificate_digest" = "3d68b0a3eae74e05999f7e32f602fde4fbc465346bce80d575bbde4006d2e332"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='com.moneyclaritytech.javapocketlab.debug'"
+          test "$certificate_digest" = "b73be37720fe5378df423a5088a3e0eb07f00980d318e249601cef81b976abe4"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='com.moneyclaritytech.pocketforge.debug'"
 
           echo "Upgrade identity verified: package ID, signing certificate and monotonic CI version code are stable."
 
@@ -188,7 +188,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           {
-            echo "## PocketJava CI failure diagnostics"
+            echo "## PocketForge CI failure diagnostics"
             echo
             echo "- Branch: \`$GITHUB_REF_NAME\`"
             echo "- Commit: \`$GITHUB_SHA\`"
@@ -200,11 +200,11 @@ jobs:
             echo '```'
           } > failure.md
 
-          issue_number=$(gh issue list --state open --search 'PocketJava CI failure diagnostics in:title' --json number --jq '.[0].number // empty')
+          issue_number=$(gh issue list --state open --search 'PocketForge CI failure diagnostics in:title' --json number --jq '.[0].number // empty')
           if [ -n "$issue_number" ]; then
             gh issue edit "$issue_number" --body-file failure.md
           else
-            gh issue create --title "PocketJava CI failure diagnostics" --body-file failure.md
+            gh issue create --title "PocketForge CI failure diagnostics" --body-file failure.md
           fi
 
       - name: Fail workflow after diagnostics are saved
@@ -213,7 +213,7 @@ jobs:
 
       - name: Prepare release APK
         if: steps.build.outputs.status == '0'
-        run: cp app/build/outputs/apk/debug/app-debug.apk PocketJava.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk PocketForge.apk
 
       - name: Publish APK directly to GitHub Release
         if: steps.build.outputs.status == '0'
@@ -221,7 +221,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="build-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" PocketJava.apk \
+          gh release create "$TAG" PocketForge.apk \
             --target "$GITHUB_SHA" \
-            --title "PocketJava 0.3.5 • Build ${GITHUB_RUN_NUMBER}" \
-            --notes "PocketJava 0.3.5 uses safe system-bar insets and keyboard resize behaviour, and makes the terminal command action explicit. Published directly to Releases; no GitHub Actions artifact storage is used."
+            --title "PocketForge 0.1.0 • Build ${GITHUB_RUN_NUMBER}" \
+            --notes "PocketForge 0.1.0 uses safe system-bar insets and keyboard resize behaviour, and makes the terminal command action explicit. Published directly to Releases; no GitHub Actions artifact storage is used."

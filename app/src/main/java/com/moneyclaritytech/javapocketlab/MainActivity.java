@@ -1,4 +1,4 @@
-package com.moneyclaritytech.javapocketlab;
+package com.moneyclaritytech.pocketforge;
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -194,7 +194,7 @@ public final class MainActivity extends AppCompatActivity {
     private void buildTools() {
         toolsContainer.removeAllViews(); toolsContainer.addView(heading("Tools"));
         toolsContainer.addView(body("Useful IDE features arranged for a phone instead of a desktop-sized screen."));
-        addTool("Examples", "Original PocketJava examples for loops, input, arrays, methods and objects.", this::showExamples);
+        addTool("Language hub", "Choose a language track, see what runs on-device, and follow the module roadmap.", this::showLanguageHub);\n        addTool("Examples", "Original PocketForge examples for loops, input, arrays, methods and objects.", this::showExamples);
         addTool("Java REPL", "Try short Java statements and keep earlier statements in the session.", this::showRepl);
         addTool("Maven libraries", "Add common Maven Central JARs with group:artifact:version.", this::showMaven);
         addTool("Project files", "Create, import, rename, switch and delete Java files.", this::showFilesDialog);
@@ -208,7 +208,7 @@ public final class MainActivity extends AppCompatActivity {
     private void buildSettings() {
         settingsContainer.removeAllViews();
         settingsContainer.addView(heading("Settings"));
-        settingsContainer.addView(body("Make PocketJava comfortable for your phone and the way you learn. Changes are saved automatically."));
+        settingsContainer.addView(body("Make PocketForge comfortable for your phone and the way you learn. Changes are saved automatically."));
 
         MaterialCardView editorCard = card();
         LinearLayout editorBox = column(dp(14));
@@ -264,7 +264,7 @@ public final class MainActivity extends AppCompatActivity {
         MaterialCardView learningCard = card();
         LinearLayout learningBox = column(dp(14));
         learningBox.addView(heading("Learning help"));
-        learningBox.addView(body("Every compile failure now opens PocketJava Fix Guide automatically. It explains the first error in plain English and tells you what to change. Full technical details remain in Console."));
+        learningBox.addView(body("Every compile failure now opens PocketForge Fix Guide automatically. It explains the first error in plain English and tells you what to change. Full technical details remain in Console."));
         MaterialButton guide = actionButton("Open last compiler result");
         guide.setOnClickListener(v -> showPage(2));
         learningBox.addView(guide);
@@ -379,7 +379,7 @@ public final class MainActivity extends AppCompatActivity {
         TextView guide = codeBlock(text);
         guide.setTextSize(12);
         new MaterialAlertDialogBuilder(this)
-                .setTitle("PocketJava Fix Guide")
+                .setTitle("PocketForge Fix Guide")
                 .setMessage("Start with the first error. The guide below explains what to change; the technical compiler log is kept for reference.")
                 .setView(wrapScroll(guide))
                 .setNegativeButton("Close", null)
@@ -393,7 +393,7 @@ public final class MainActivity extends AppCompatActivity {
 
     private void showExamples() {
         Map<String, String> examples = ExampleRepository.examples(); String[] names = examples.keySet().toArray(new String[0]);
-        new MaterialAlertDialogBuilder(this).setTitle("PocketJava examples").setItems(names, (d, which) -> { String name = names[which], code = examples.get(name); new MaterialAlertDialogBuilder(this).setTitle(name).setView(wrapScroll(codeBlock(code))).setNegativeButton("Close", null).setNeutralButton("Copy", (x, w) -> copy(code)).setPositiveButton("Load", (x, w) -> { setEditorText(code); dirty = true; updateSubtitle(); showPage(0); }).show(); }).setNegativeButton("Close", null).show();
+        new MaterialAlertDialogBuilder(this).setTitle("PocketForge examples").setItems(names, (d, which) -> { String name = names[which], code = examples.get(name); new MaterialAlertDialogBuilder(this).setTitle(name).setView(wrapScroll(codeBlock(code))).setNegativeButton("Close", null).setNeutralButton("Copy", (x, w) -> copy(code)).setPositiveButton("Load", (x, w) -> { setEditorText(code); dirty = true; updateSubtitle(); showPage(0); }).show(); }).setNegativeButton("Close", null).show();
     }
 
     private void showRepl() {
@@ -417,14 +417,50 @@ public final class MainActivity extends AppCompatActivity {
         new MaterialAlertDialogBuilder(this).setTitle("Editor settings").setView(root).setNegativeButton("Cancel", null).setPositiveButton("Apply", (d, w) -> { int size = 12 + font.getProgress(); prefs.edit().putBoolean("wrap", wrap.isChecked()).putBoolean("lines", lines.isChecked()).putInt("font", size).apply(); optional(editor, "setWordwrap", new Class<?>[]{boolean.class}, wrap.isChecked()); optional(editor, "setLineNumberEnabled", new Class<?>[]{boolean.class}, lines.isChecked()); optional(editor, "setTextSize", new Class<?>[]{float.class}, (float) size); }).show();
     }
 
+    private void showLanguageHub() {
+        LinearLayout box = column(dp(14));
+        box.addView(heading("Language hub"));
+        box.addView(body("PocketForge is designed as a language-learning and coding workspace. Java is the first built-in compiler; other runtimes are represented as installable modules so the platform can grow without making the base APK unnecessarily large."));
+        for (LanguageCatalog.Language language : LanguageCatalog.all()) {
+            MaterialCardView card = card();
+            LinearLayout row = column(dp(12));
+            TextView title = heading(language.name);
+            title.setTextSize(17);
+            row.addView(title);
+            row.addView(body(language.description));
+            TextView status = body(language.statusLabel);
+            status.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            row.addView(status);
+            card.addView(row);
+            box.addView(card, cardParams());
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Choose your language path")
+                .setView(wrapScroll(box))
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
     private void showDocs() {
         LinkedHashMap<String, String> docs = new LinkedHashMap<>(); docs.put("System.out.println", "Prints a value and starts a new line.\n\nSystem.out.println(\"Hello\");"); docs.put("String", "Stores text.\n\nString city = \"Delhi\";"); docs.put("int", "Whole number.\n\nint age = 25;"); docs.put("double", "Decimal number.\n\ndouble rate = 8.5;"); docs.put("boolean", "true or false.\n\nboolean ready = true;"); docs.put("if / else", "Choose between paths based on a condition."); docs.put("for loop", "Repeat code a known number of times."); docs.put("while loop", "Repeat while a condition remains true."); docs.put("Scanner", "Read input from System.in."); docs.put("ArrayList", "Resizable list."); docs.put("Math", "Math.max, Math.min, Math.sqrt and more."); docs.put("Method", "Reusable block of code."); docs.put("Class", "Blueprint for objects.");
         String[] names = docs.keySet().toArray(new String[0]); new MaterialAlertDialogBuilder(this).setTitle("Java quick docs").setItems(names, (d, which) -> new MaterialAlertDialogBuilder(this).setTitle(names[which]).setMessage(docs.get(names[which])).setPositiveButton("Close", null).show()).setNegativeButton("Close", null).show();
     }
 
     private void showCompatibility() {
-        String text = "Implemented now\n• On-device Java compile + run for educational code\n• Separate runner process + 8-second safety stop\n• Java-aware mobile editor, tabs, symbol keyboard\n• Files, import, format, share, original examples and lessons\n• Java REPL\n• Maven Central JAR resolver\n• Console + Android shell in app sandbox\n• Quick docs and editor settings\n• No ads, trackers or in-app purchases\n\nLarger expansion modules\n• Full standalone OpenJDK 11\n• OpenJDK JShell itself\n• Full Maven lifecycle/plugins\n• BusyBox/Nailgun\n• Kotlin, Scala and Clojure toolchains\n• Full javac/LSP semantic diagnostics\n\nThird-party: Sora Editor (LGPL-2.1), Janino (BSD-3-Clause), Google R8/D8.";
-        new MaterialAlertDialogBuilder(this).setTitle("Compatibility & licenses").setMessage(text).setPositiveButton("Close", null).show();
+        String text = "PocketForge 0.1 foundation\n\n"
+                + "Available now\n"
+                + "• Phone-first code editor with tabs and symbol keyboard\n"
+                + "• On-device Java compile and run for learning projects\n"
+                + "• Local files, examples, lessons, formatter and REPL\n"
+                + "• Android-sandbox terminal commands\n"
+                + "• Dedicated settings, themes and readable dark mode\n\n"
+                + "Language platform roadmap\n"
+                + "• Python, C/C++, JavaScript/Node.js, Kotlin, Go, Rust, PHP and shell modules\n"
+                + "• Download-on-demand runtimes so the base APK stays practical\n"
+                + "• Per-language editor, runner, package and learning metadata\n\n"
+                + "The new platform branch is independent from PocketJava. No branch merge is performed unless explicitly requested.\n\n"
+                + "Third-party: Sora Editor (LGPL-2.1), Eclipse Compiler for Java, Google R8/D8.";
+        new MaterialAlertDialogBuilder(this).setTitle("Platform & licenses").setMessage(text).setPositiveButton("Close", null).show();
     }
 
     private void shareCode() { Intent send = new Intent(Intent.ACTION_SEND); send.setType("text/plain"); send.putExtra(Intent.EXTRA_SUBJECT, currentFile == null ? "Java code" : currentFile.getName()); send.putExtra(Intent.EXTRA_TEXT, editorText()); startActivity(Intent.createChooser(send, "Share Java code")); }
