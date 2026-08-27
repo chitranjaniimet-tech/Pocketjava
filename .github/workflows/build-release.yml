@@ -148,22 +148,17 @@ jobs:
           test -s app/src/main/assets/compiler/android-36.jar
 
       - name: Build installable APK
-        id: build
         shell: bash
         run: |
-          set +e
+          set -o pipefail
           CI_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
           gradle --no-daemon --stacktrace --warning-mode all \
             -PciVersionCode="$CI_VERSION_CODE" \
             -PpocketForgeDebugKeystore="$GITHUB_WORKSPACE/.ci/pocketforge-debug.jks" \
             :app:assembleDebug 2>&1 | tee build.log
-          status=${PIPESTATUS[0]}
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "version_code=$CI_VERSION_CODE" >> "$GITHUB_OUTPUT"
-          exit 0
 
       - name: Verify upgrade identity
-        if: steps.build.outputs.status == '0'
+        if: success()
         shell: bash
         run: |
           set -euo pipefail
@@ -188,7 +183,7 @@ jobs:
           echo "Upgrade identity verified: package ID, signing certificate and monotonic CI version code are stable."
 
       - name: Publish failure diagnostics to one GitHub issue
-        if: steps.build.outputs.status != '0'
+        if: failure()
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
