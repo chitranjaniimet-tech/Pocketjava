@@ -9,8 +9,6 @@ import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.ResultReceiver;
 import android.provider.OpenableColumns;
 import android.database.Cursor;
 import android.view.Gravity;
@@ -196,7 +194,7 @@ public final class MainActivity extends AppCompatActivity {
         toolsContainer.removeAllViews(); toolsContainer.addView(heading("Tools"));
         toolsContainer.addView(body("Useful IDE features arranged for a phone instead of a desktop-sized screen."));
         addTool("Language hub", "Choose a language track, see what runs on-device, and follow the module roadmap.", this::showLanguageHub);
-        addTool("Runtime manager", "Install Python, Node.js, C/C++, Go, Rust, PHP, Ruby and other tools through the Termux-compatible backend.", this::showRuntimeManager);
+        addTool("Runtime manager", "Install PocketForge language modules into the app-owned runtime workspace.", this::showRuntimeManager);
         addTool("Examples", "Original PocketForge examples for loops, input, arrays, methods and objects.", this::showExamples);
         addTool("Java REPL", "Try short Java statements and keep earlier statements in the session.", this::showRepl);
         addTool("Maven libraries", "Add common Maven Central JARs with group:artifact:version.", this::showMaven);
@@ -380,17 +378,19 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void runExternalSource(String languageId, String source) {
-        if (!TermuxBridge.isInstalled(this)) {
+        PocketForgeRuntime runtime = new PocketForgeRuntime(this);
+        PocketForgeRuntime.Module module = PocketForgeRuntime.moduleFor(languageId);
+        if (module == null || !runtime.isInstalled(module)) {
             new MaterialAlertDialogBuilder(this)
-                    .setTitle("Runtime required")
-                    .setMessage("PocketForge can run this language through its Termux-compatible runtime backend. Install Termux, grant PocketForge the Run commands in Termux permission, enable allow-external-apps, then install the language from Runtime manager.")
+                    .setTitle("PocketForge module required")
+                    .setMessage("This language needs its PocketForge runtime module. Open Runtime manager to install a signed module into PocketForge's private workspace. PocketForge owns this runtime.")
                     .setNegativeButton("Close", null)
                     .setPositiveButton("Runtime manager", (d, w) -> showRuntimeManager())
                     .show();
             return;
         }
         if (source.length() > 100000) {
-            toast("This source file is too large for the current runtime bridge.");
+            toast("This source file is too large for the current runtime.");
             return;
         }
         boolean needsInput = source.contains("input(") || source.contains("readline(") || source.contains("process.stdin");
@@ -415,21 +415,18 @@ public final class MainActivity extends AppCompatActivity {
         running = true;
         updateRunButtons();
         showPage(2);
-        appendConsole("\n> Running " + languageId + " through the runtime backend\n");
+        appendConsole("\n> Running " + languageId + " with the PocketForge runtime\n");
         consolePreview.setText("Running " + languageId + "…");
-        TermuxBridge.runSource(this, languageId, source, stdin, new ResultReceiver(new Handler(getMainLooper())) {
-            @Override protected void onReceiveResult(int resultCode, Bundle resultData) {
+        PocketForgeRuntime runtime = new PocketForgeRuntime(this);
+        runtime.runSource(languageId, source, stdin, new PocketForgeRuntime.Callback() {
+            @Override public void complete(boolean success, String output, int exitCode) {
                 running = false;
                 updateRunButtons();
-                String output = resultData == null ? "" : resultData.getString("stdout", "");
-                String error = resultData == null ? "" : resultData.getString("stderr", "");
-                int exitCode = resultData == null ? -1 : resultData.getInt("exitCode", -1);
-                String message = resultData == null ? "" : resultData.getString("errorMessage", "");
-                if (!error.isEmpty()) output += (output.isEmpty() ? "" : "\n") + error;
-                if (!message.isEmpty()) output += (output.isEmpty() ? "" : "\n") + message;
-                output += (output.endsWith("\n") ? "" : "\n") + "[exit code " + exitCode + "]\n";
-                appendConsole(output);
-                consolePreview.setText(exitCode == 0 ? "Finished" : "Exited with code " + exitCode);
+                String text = output == null ? "" : output;
+                text += (text.endsWith("\n") ? "" : "\n") + "[exit code " + exitCode + "]\n";
+                appendConsole(text);
+                consolePreview.setText(success ? "Finished" : "Exited with code " + exitCode);
+                if (!success) showFixGuide(output);
             }
         });
     }
@@ -504,46 +501,30 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void showRuntimeManager() {
-        if (!TermuxBridge.isInstalled(this)) {
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle("Connect a runtime")
-                    .setMessage("PocketForge uses a Termux-compatible backend for downloadable programming modules. Install Termux first, then grant PocketForge permission to run commands in the Termux environment.")
-                    .setNegativeButton("Close", null)
-                    .setPositiveButton("Show setup", (d, w) -> showTermuxSetup())
-                    .show();
-            return;
+        PocketForgeRuntime runtime = new PocketForgeRuntime(this);
+        List<PocketForgeRuntime.Module> modules = PocketForgeRuntime.modules();
+        String[] names = new String[modules.size()];
+        for (int i = 0; i < modules.size(); i++) {
+            PocketForgeRuntime.Module module = modules.get(i);
+            names[i] = module.name + (runtime.isInstalled(module) ? "  • installed" : "  • available to install");
         }
-        String[] names = {"Python 3", "JavaScript / Node.js", "C / C++ (Clang)", "Go", "Rust", "PHP", "Ruby", "Perl", "Bash utilities"};
-        String[] packages = {"python", "nodejs", "clang", "golang", "rust", "php", "ruby", "perl", "bash"};
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Install language module")
-                .setMessage("Choose a package. Termux will download and install it online.")
-                .setItems(names, (d, which) -> installRuntimePackage(packages[which]))
+                .setTitle("PocketForge runtime modules")
+                .setMessage("Modules are installed inside PocketForge's private runtime workspace. They are independent of PocketJava and do not require another terminal app.")
+                .setItems(names, (d, which) -> installRuntimeModule(modules.get(which)))
                 .setNegativeButton("Close", null)
                 .show();
     }
 
-    private void installRuntimePackage(String packageName) {
+    private void installRuntimeModule(PocketForgeRuntime.Module module) {
         showPage(2);
-        appendConsole("\n> Installing " + packageName + "…\n");
-        consolePreview.setText("Installing " + packageName + "…");
-        TermuxBridge.installPackage(this, packageName, new ResultReceiver(new Handler(getMainLooper())) {
-            @Override protected void onReceiveResult(int resultCode, Bundle resultData) {
-                String output = resultData == null ? "" : resultData.getString("stdout", "");
-                String error = resultData == null ? "" : resultData.getString("stderr", "");
-                if (!error.isEmpty()) output += (output.isEmpty() ? "" : "\n") + error;
-                appendConsole(output.isEmpty() ? "Installation finished.\n" : output + (output.endsWith("\n") ? "" : "\n"));
-                consolePreview.setText("Runtime installation finished");
-            }
+        appendConsole("\n> Installing PocketForge module " + module.name + "…\n");
+        consolePreview.setText("Installing " + module.name + "…");
+        new PocketForgeRuntime(this).installModule(module, (success, output) -> {
+            appendConsole((output == null || output.isEmpty() ? "No installer output.\n" : output + (output.endsWith("\n") ? "" : "\n")));
+            consolePreview.setText(success ? module.name + " installed" : "Module installation unavailable");
+            if (!success) showFixGuide(output);
         });
-    }
-
-    private void showTermuxSetup() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("One-time runtime setup")
-                .setMessage("1. Install Termux from its official F-Droid or GitHub release.\n\n2. Open Termux once and run:\n\n  apt update\n  apt upgrade\n\n3. In Termux settings, enable allow-external-apps.\n\n4. In Android Settings → Apps → PocketForge → Permissions → Additional permissions, allow Run commands in Termux environment.\n\nThen return to PocketForge and install a language module.")
-                .setPositiveButton("Close", null)
-                .show();
     }
 
     private void showLanguageHub() {
