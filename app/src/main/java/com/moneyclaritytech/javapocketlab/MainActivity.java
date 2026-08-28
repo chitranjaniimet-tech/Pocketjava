@@ -531,6 +531,7 @@ public final class MainActivity extends AppCompatActivity {
         LinearLayout box = column(dp(14));
         box.addView(heading("Language hub"));
         box.addView(body("PocketForge is designed as a language-learning and coding workspace. Java is the first built-in compiler; other runtimes are represented as installable modules so the platform can grow without making the base APK unnecessarily large."));
+        PocketForgeRuntime runtime = new PocketForgeRuntime(this);
         for (LanguageCatalog.Language language : LanguageCatalog.all()) {
             MaterialCardView card = card();
             LinearLayout row = column(dp(12));
@@ -538,7 +539,9 @@ public final class MainActivity extends AppCompatActivity {
             title.setTextSize(17);
             row.addView(title);
             row.addView(body(language.description));
-            TextView status = body(language.statusLabel);
+            PocketForgeRuntime.Module module = PocketForgeRuntime.moduleFor(language.id);
+            String statusText = "java".equals(language.id) ? "Built-in" : (module != null && runtime.isInstalled(module) ? "Installed" : "PocketForge runtime pack pending");
+            TextView status = body(statusText);
             status.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
             row.addView(status);
             card.addView(row);
