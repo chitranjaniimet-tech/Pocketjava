@@ -158,15 +158,17 @@ public final class PocketForgeRuntime {
                 }
                 executableFile.setExecutable(true, false);
 
+                File stagedModule = new File(staging, "modules/" + module.id);
                 File installed = new File(runtimeRoot, "modules/" + module.id);
                 deleteTree(installed);
                 File installedParent = installed.getParentFile();
                 if (installedParent != null) installedParent.mkdirs();
-                if (!staging.renameTo(installed)) {
+                if (!stagedModule.renameTo(installed)) {
                     deleteTree(staging);
                     finishInstall(callback, false, "Could not activate the " + module.name + " pack.");
                     return;
                 }
+                deleteTree(staging);
                 finishInstall(callback, true, module.name + " installed in PocketForge private storage.");
             } catch (Exception e) {
                 finishInstall(callback, false, "Module installation failed: " + safeMessage(e));
