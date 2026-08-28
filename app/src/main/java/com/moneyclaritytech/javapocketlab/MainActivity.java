@@ -9,6 +9,8 @@ import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.ResultReceiver;
 import android.provider.OpenableColumns;
 import android.database.Cursor;
 import android.view.Gravity;
