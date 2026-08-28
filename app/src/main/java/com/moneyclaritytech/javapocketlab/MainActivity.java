@@ -385,7 +385,7 @@ public final class MainActivity extends AppCompatActivity {
         if (module == null || !runtime.isInstalled(module)) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle("PocketForge module required")
-                    .setMessage("This language needs its PocketForge runtime module. Open Runtime manager to install a signed module into PocketForge's private workspace. PocketForge owns this runtime.")
+                    .setMessage("This language needs its PocketForge runtime module. Open Runtime manager to install a verified module into PocketForge's private workspace. PocketForge owns this runtime.")
                     .setNegativeButton("Close", null)
                     .setPositiveButton("Runtime manager", (d, w) -> showRuntimeManager())
                     .show();
