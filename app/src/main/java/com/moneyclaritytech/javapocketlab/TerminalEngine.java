@@ -35,13 +35,13 @@ public final class TerminalEngine {
         try {
             switch (command) {
                 case "help":
-                    return "PocketJava learner commands:\n" +
+                    return "PocketForge terminal commands:\n" +
                             "  help              show this help\n" +
                             "  pwd               show project folder\n" +
-                            "  ls                list Java files\n" +
-                            "  cat <file>        show a Java file\n" +
-                            "  touch <file>      create a Java file\n" +
-                            "  rm <file>         delete a Java file\n" +
+                            "  ls                list source files\n" +
+                            "  cat <file>        show a source file\n" +
+                            "  touch <file>      create a source file\n" +
+                            "  rm <file>         delete a source file\n" +
                             "  run               run active editor file\n" +
                             "  save              save active editor file\n" +
                             "  clear             clear console\n\n" +
@@ -50,10 +50,10 @@ public final class TerminalEngine {
                 case "pwd":
                     return store.root().getAbsolutePath();
                 case "ls":
-                    String listed = store.listJavaFiles().stream()
+                    String listed = store.listSourceFiles().stream()
                             .map(File::getName)
                             .collect(Collectors.joining("\n"));
-                    return listed.isEmpty() ? "(no Java files)" : listed;
+                    return listed.isEmpty() ? "(no source files)" : listed;
                 case "cat":
                     if (arg.isEmpty()) return "usage: cat <file>";
                     File cat = store.file(arg);
@@ -116,7 +116,14 @@ public final class TerminalEngine {
     }
 
     private static String starterFor(String fileName) {
-        String cls = fileName.replace(".java", "").replaceAll("[^A-Za-z0-9_$]", "_");
+        String lower = fileName.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".py")) return "# PocketForge Python file\nprint(\"Hello from PocketForge\")\n";
+        if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "// PocketForge JavaScript file\nconsole.log(\"Hello from PocketForge\");\n";
+        if (lower.endsWith(".php")) return "<?php\necho \"Hello from PocketForge\";\n";
+        if (lower.endsWith(".rb")) return "puts \"Hello from PocketForge\"\n";
+        if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "#!/system/bin/sh\necho \"Hello from PocketForge\"\n";
+        if (lower.endsWith(".pl")) return "print \"Hello from PocketForge\\n\";\n";
+        String cls = fileName.replaceFirst("(?i)\\.java$", "").replaceAll("[^A-Za-z0-9_$]", "_");
         if (cls.isEmpty() || Character.isDigit(cls.charAt(0))) cls = "Main";
         return "public class " + cls + " {\n" +
                 "    public static void main(String[] args) {\n" +
