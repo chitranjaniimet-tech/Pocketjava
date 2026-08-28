@@ -295,7 +295,7 @@ public final class PocketForgeRuntime {
             while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
         }
         StringBuilder result = new StringBuilder();
-        for (byte value : digest.digest()) result.append(String.format("%02x", value));
+        for (byte value : digest.digest()) result.append(String.format("%02x", value & 0xff));
         return result.toString();
     }
 
