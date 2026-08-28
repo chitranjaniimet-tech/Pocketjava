@@ -312,16 +312,27 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void showFilesDialog() {
-        List<File> files = store.listJavaFiles(); String[] names = new String[files.size()]; for (int i = 0; i < files.size(); i++) names[i] = files.get(i).getName();
+        List<File> files = store.listSourceFiles(); String[] names = new String[files.size()]; for (int i = 0; i < files.size(); i++) names[i] = files.get(i).getName();
         new MaterialAlertDialogBuilder(this).setTitle("Project files").setItems(names, (d, which) -> openFile(files.get(which))).setNegativeButton("Close", null).setNeutralButton("Import", (d, w) -> importJava()).setPositiveButton("New", (d, w) -> promptNewFile()).show();
     }
 
     private void promptNewFile() {
-        EditText input = dialogInput("Example.java");
-        new MaterialAlertDialogBuilder(this).setTitle("New Java file").setView(input).setNegativeButton("Cancel", null).setPositiveButton("Create", (d, w) -> {
-            String name = input.getText().toString().trim(); if (name.isEmpty()) return; File f = store.file(name); String cls = classNameFor(f.getName());
-            try { store.write(f.getName(), "public class " + cls + " {\n    public static void main(String[] args) {\n        \n    }\n}\n"); openFile(f); } catch (Exception e) { toast("Could not create file"); }
+        EditText input = dialogInput("Main.java or square.py");
+        new MaterialAlertDialogBuilder(this).setTitle("New source file").setMessage("Use an extension such as .java, .py, .js, .php, .rb or .sh.").setView(input).setNegativeButton("Cancel", null).setPositiveButton("Create", (d, w) -> {
+            String name = input.getText().toString().trim(); if (name.isEmpty()) return; File f = store.file(name);
+            try { store.write(f.getName(), starterFor(f.getName())); openFile(f); } catch (Exception e) { toast("Could not create file"); }
         }).show();
+    }
+
+    private String starterFor(String name) {
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".py")) return "number = 7\\nprint(\"The square of\", number, \"is\", number * number)\\n";
+        if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "const number = 7;\\nconsole.log('The square of ' + number + ' is ' + (number * number));\\n";
+        if (lower.endsWith(".php")) return "$number = 7;\\necho \"The square of \" . $number . \" is \" . ($number * $number) . PHP_EOL;\\n";
+        if (lower.endsWith(".rb")) return "number = 7\\nputs \"The square of #{number} is #{number * number}\"\\n";
+        if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "#!/data/data/com.termux/files/usr/bin/bash\\nnumber=7\\necho \"The square of $number is $((number * number))\"\\n";
+        String cls = classNameFor(name);
+        return "public class " + cls + " {\\n    public static void main(String[] args) {\\n        System.out.println(\"Hello from PocketForge!\");\\n    }\\n}\\n";
     }
 
     private void promptRename() {
@@ -333,7 +344,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void confirmDelete() {
-        if (currentFile == null) return; if (store.listJavaFiles().size() <= 1) { toast("Keep at least one Java file"); return; } File deleting = currentFile;
+        if (currentFile == null) return; if (store.listSourceFiles().size() <= 1) { toast("Keep at least one Java file"); return; } File deleting = currentFile;
         new MaterialAlertDialogBuilder(this).setTitle("Delete " + deleting.getName() + "?").setMessage("This removes the file from this local project.").setNegativeButton("Cancel", null).setPositiveButton("Delete", (d, w) -> { if (store.delete(deleting)) { List<File> files = store.listJavaFiles(); if (!files.isEmpty()) openFile(files.get(0)); } }).show();
     }
 
