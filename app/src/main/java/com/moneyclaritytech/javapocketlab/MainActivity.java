@@ -328,7 +328,7 @@ public final class MainActivity extends AppCompatActivity {
         if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "const number = 7;\\nconsole.log('The square of ' + number + ' is ' + (number * number));\\n";
         if (lower.endsWith(".php")) return "$number = 7;\\necho \"The square of \" . $number . \" is \" . ($number * $number) . PHP_EOL;\\n";
         if (lower.endsWith(".rb")) return "number = 7\\nputs \"The square of #{number} is #{number * number}\"\\n";
-        if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "#!/data/data/com.termux/files/usr/bin/bash\\nnumber=7\\necho \"The square of $number is $((number * number))\"\\n";
+        if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "#!/system/bin/sh\\nnumber=7\\necho \"The square of $number is $((number * number))\"\\n";
         String cls = classNameFor(name);
         return "public class " + cls + " {\\n    public static void main(String[] args) {\\n        System.out.println(\"Hello from PocketForge!\");\\n    }\\n}\\n";
     }
