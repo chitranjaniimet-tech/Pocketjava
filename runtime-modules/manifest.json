@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "product": "PocketForge",
+  "description": "PocketForge-owned runtime packs. Every archive must be Android-compatible for the target ABI and published with a SHA-256 digest.",
+  "modules": []
+}
