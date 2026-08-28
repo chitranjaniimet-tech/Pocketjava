@@ -7,7 +7,7 @@ PocketForge is a phone-first mobile coding workstation and language-learning pla
 PocketForge combines:
 
 - A comfortable mobile code editor
-- A real terminal inside the Android app sandbox
+- A real terminal inside the Android app sandbox with PocketForge project commands
 - Local project and file management
 - Guided lessons, examples and challenges
 - On-device execution where an Android-compatible runtime is available
@@ -16,7 +16,7 @@ PocketForge combines:
 
 ## Language platform
 
-Java is the first built-in compiler because it is already implemented and tested on-device. The language registry is deliberately independent from the Java runner. Runtime modules can be installed online through the Termux-compatible backend for:
+Java is the first built-in compiler because it is already implemented and tested on-device. The language registry is deliberately independent from the Java runner. Runtime modules are downloaded from the PocketForge runtime repository and installed into PocketForge's private app storage. The catalog is designed for:
 
 - Python
 - C and C++
@@ -37,10 +37,11 @@ This branch is `pocketforge-platform`. It is intentionally independent from the 
 
 - PocketForge application ID: `com.moneyclaritytech.pocketforge`
 - Separate debug signing identity from PocketJava
-- Java compiler and runner plus Termux-compatible runtime bridge
+- Java compiler and runner plus PocketForge-owned runtime installer and process runner
 - Language hub, runtime manager and module registry
 - Mobile editor, lessons, examples, files, formatter, REPL, terminal and settings
 - No ads, trackers or in-app purchase SDK
+- No dependency on Termux or another terminal application
 
 ## Build
 
