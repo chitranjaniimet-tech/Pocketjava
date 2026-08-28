@@ -81,7 +81,7 @@ dependencies {
     // Android-compatible Eclipse Compiler for Java. ECJ 3.20+ references
     // javax.lang.model.SourceVersion from the desktop java.compiler module,
     // which Android does not ship. Eclipse 4.12 / ECJ 3.18.0 is the last
-    // Termux-pinned Android-compatible line and still supports Java 11/12 syntax.
+    // PocketForge-tested Android-compatible line and still supports Java 11/12 syntax.
     implementation("org.eclipse.jdt:ecj:3.18.0")
 
     // D8 converts ECJ-generated JVM .class files into Android DEX at runtime.
