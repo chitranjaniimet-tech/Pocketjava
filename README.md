@@ -11,12 +11,12 @@ PocketForge combines:
 - Local project and file management
 - Guided lessons, examples and challenges
 - On-device execution where an Android-compatible runtime is available
-- Downloadable language modules rather than one oversized base APK
+- Online language modules rather than one oversized base APK
 - Git, package and workspace integrations as the platform matures
 
 ## Language platform
 
-Java is the first built-in compiler because it is already implemented and tested on-device. The language registry is deliberately independent from the Java runner and is ready for:
+Java is the first built-in compiler because it is already implemented and tested on-device. The language registry is deliberately independent from the Java runner. Runtime modules can be installed online through the Termux-compatible backend for:
 
 - Python
 - C and C++
@@ -37,8 +37,8 @@ This branch is `pocketforge-platform`. It is intentionally independent from the 
 
 - PocketForge application ID: `com.moneyclaritytech.pocketforge`
 - Separate debug signing identity from PocketJava
-- Java compiler and runner carried forward as the first language module
-- Language hub and module registry
+- Java compiler and runner plus Termux-compatible runtime bridge
+- Language hub, runtime manager and module registry
 - Mobile editor, lessons, examples, files, formatter, REPL, terminal and settings
 - No ads, trackers or in-app purchase SDK
 

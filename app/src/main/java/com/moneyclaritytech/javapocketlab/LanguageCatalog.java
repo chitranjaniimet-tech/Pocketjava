@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** Central registry for language tracks and future downloadable runtimes. */
+/** Registry of installable language tracks and their runtime capabilities. */
 public final class LanguageCatalog {
     private LanguageCatalog() {}
 
@@ -26,15 +26,16 @@ public final class LanguageCatalog {
 
     public static List<Language> all() {
         return Collections.unmodifiableList(Arrays.asList(
-                new Language("java", "Java", "Compile and run learning projects locally with the built-in Android-compatible compiler.", "Available in this build", true),
-                new Language("python", "Python", "Planned downloadable interpreter module with lessons, scripts and package support.", "Module planned", false),
-                new Language("cpp", "C / C++", "Planned native toolchain module for portable console programs.", "Module planned", false),
-                new Language("javascript", "JavaScript / Node.js", "Planned scripting module for browser-style JavaScript and server-side Node workflows.", "Module planned", false),
-                new Language("kotlin", "Kotlin", "Planned Kotlin learning and Android-oriented scripting track.", "Module planned", false),
-                new Language("go", "Go", "Planned compiled-language module for command-line tools.", "Module planned", false),
-                new Language("rust", "Rust", "Planned systems-language module with carefully bounded native execution.", "Module planned", false),
-                new Language("php", "PHP", "Planned web-scripting module for learning and small local projects.", "Module planned", false),
-                new Language("shell", "Shell", "Use the current Android-sandbox terminal for shell commands and automation.", "Terminal foundation available", true)
+                new Language("java", "Java", "Built-in Android-compatible compiler and runner for learning projects.", "Built-in", true),
+                new Language("python", "Python", "Install Python 3 online, then run .py files from the PocketForge editor.", "Installable module", true),
+                new Language("cpp", "C / C++", "Install Clang online for native console programs and toolchain work.", "Installable module", true),
+                new Language("javascript", "JavaScript / Node.js", "Install Node.js online for scripts and server-style JavaScript.", "Installable module", true),
+                new Language("kotlin", "Kotlin", "Install a Kotlin toolchain when the package is available for the device architecture.", "Installable module", true),
+                new Language("go", "Go", "Install Go online for compiled command-line programs.", "Installable module", true),
+                new Language("rust", "Rust", "Install Rust online for systems programming and native tools.", "Installable module", true),
+                new Language("php", "PHP", "Install PHP online for web scripting and command-line practice.", "Installable module", true),
+                new Language("ruby", "Ruby", "Install Ruby online for scripting and learning.", "Installable module", true),
+                new Language("shell", "Shell", "Bash and Android-compatible shell utilities through the runtime backend.", "Installable module", true)
         ));
     }
 }

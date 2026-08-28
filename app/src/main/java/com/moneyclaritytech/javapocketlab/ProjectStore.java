@@ -23,7 +23,7 @@ public final class ProjectStore {
 
     public File file(String name) {
         String safe = name == null ? "Main.java" : name.replaceAll("[^A-Za-z0-9_.$-]", "_");
-        if (!safe.endsWith(".java")) safe += ".java";
+        if (!safe.contains(".")) safe += ".java";
         return new File(root, safe);
     }
 
@@ -32,18 +32,33 @@ public final class ProjectStore {
             write("Main.java",
                     "public class Main {\n" +
                     "    public static void main(String[] args) {\n" +
-                    "        System.out.println(\"Hello from Java Pocket Lab!\");\n" +
+                    "        System.out.println(\"Hello from PocketForge!\");\n" +
                     "    }\n" +
                     "}\n");
         }
     }
 
     public List<File> listJavaFiles() {
-        File[] files = root.listFiles((dir, name) -> name.endsWith(".java"));
+        File[] files = root.listFiles((dir, name) -> name.toLowerCase().endsWith(".java"));
+        return sorted(files);
+    }
+
+    public List<File> listSourceFiles() {
+        File[] files = root.listFiles((dir, name) -> {
+            String lower = name.toLowerCase();
+            return lower.endsWith(".java") || lower.endsWith(".py") || lower.endsWith(".js")
+                    || lower.endsWith(".mjs") || lower.endsWith(".php") || lower.endsWith(".rb")
+                    || lower.endsWith(".sh") || lower.endsWith(".bash") || lower.endsWith(".c")
+                    || lower.endsWith(".h") || lower.endsWith(".cpp") || lower.endsWith(".cc")
+                    || lower.endsWith(".go") || lower.endsWith(".rs") || lower.endsWith(".kt")
+                    || lower.endsWith(".kts");
+        });
+        return sorted(files);
+    }
+
+    private List<File> sorted(File[] files) {
         List<File> out = new ArrayList<>();
-        if (files != null) {
-            for (File f : files) out.add(f);
-        }
+        if (files != null) for (File f : files) out.add(f);
         out.sort(Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
         return out;
     }

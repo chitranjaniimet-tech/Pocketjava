@@ -1,6 +1,7 @@
 package com.moneyclaritytech.pocketforge;
 
 import android.app.Activity;
+import android.os.Build;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
@@ -195,6 +196,7 @@ public final class MainActivity extends AppCompatActivity {
         toolsContainer.removeAllViews(); toolsContainer.addView(heading("Tools"));
         toolsContainer.addView(body("Useful IDE features arranged for a phone instead of a desktop-sized screen."));
         addTool("Language hub", "Choose a language track, see what runs on-device, and follow the module roadmap.", this::showLanguageHub);
+        addTool("Runtime manager", "Install Python, Node.js, C/C++, Go, Rust, PHP, Ruby and other tools through the Termux-compatible backend.", this::showRuntimeManager);
         addTool("Examples", "Original PocketForge examples for loops, input, arrays, methods and objects.", this::showExamples);
         addTool("Java REPL", "Try short Java statements and keep earlier statements in the session.", this::showRepl);
         addTool("Maven libraries", "Add common Maven Central JARs with group:artifact:version.", this::showMaven);
@@ -342,11 +344,83 @@ public final class MainActivity extends AppCompatActivity {
 
     private void runActiveSource() {
         if (running) { stopRunner(); return; }
-        saveCurrentQuietly(); String source = editorText();
+        saveCurrentQuietly();
+        String source = editorText();
+        String languageId = languageIdForCurrentFile();
+        if (!"java".equals(languageId)) {
+            runExternalSource(languageId, source);
+            return;
+        }
         if (DynamicJavaRunner.probablyNeedsInput(source)) {
             EditText stdin = new EditText(this); stdin.setHint("One answer per line"); stdin.setMinLines(4); stdin.setGravity(Gravity.TOP);
             new MaterialAlertDialogBuilder(this).setTitle("Program input").setMessage("Type what Scanner/System.in should receive.").setView(stdin).setNegativeButton("Cancel", null).setPositiveButton("Run", (d, w) -> runSource(source, stdin.getText().toString(), null)).show();
         } else runSource(source, "", null);
+    }
+
+    private String languageIdForCurrentFile() {
+        if (currentFile == null) return "java";
+        String name = currentFile.getName().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".py")) return "python";
+        if (name.endsWith(".js") || name.endsWith(".mjs")) return "javascript";
+        if (name.endsWith(".php")) return "php";
+        if (name.endsWith(".rb")) return "ruby";
+        if (name.endsWith(".sh") || name.endsWith(".bash")) return "shell";
+        return "java";
+    }
+
+    private void runExternalSource(String languageId, String source) {
+        if (!TermuxBridge.isInstalled(this)) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Runtime required")
+                    .setMessage("PocketForge can run this language through its Termux-compatible runtime backend. Install Termux, grant PocketForge the Run commands in Termux permission, enable allow-external-apps, then install the language from Runtime manager.")
+                    .setNegativeButton("Close", null)
+                    .setPositiveButton("Runtime manager", (d, w) -> showRuntimeManager())
+                    .show();
+            return;
+        }
+        if (source.length() > 100000) {
+            toast("This source file is too large for the current runtime bridge.");
+            return;
+        }
+        boolean needsInput = source.contains("input(") || source.contains("readline(") || source.contains("process.stdin");
+        if (needsInput) {
+            EditText stdin = new EditText(this);
+            stdin.setHint("One answer per line");
+            stdin.setMinLines(4);
+            stdin.setGravity(Gravity.TOP);
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(languageId + " program input")
+                    .setMessage("Provide the input that the program should receive.")
+                    .setView(stdin)
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Run", (d, w) -> runExternalSourceNow(languageId, source, stdin.getText().toString()))
+                    .show();
+        } else {
+            runExternalSourceNow(languageId, source, "");
+        }
+    }
+
+    private void runExternalSourceNow(String languageId, String source, String stdin) {
+        running = true;
+        updateRunButtons();
+        showPage(2);
+        appendConsole("\n> Running " + languageId + " through the runtime backend\n");
+        consolePreview.setText("Running " + languageId + "…");
+        TermuxBridge.runSource(this, languageId, source, stdin, new ResultReceiver(new Handler(getMainLooper())) {
+            @Override protected void onReceiveResult(int resultCode, Bundle resultData) {
+                running = false;
+                updateRunButtons();
+                String output = resultData == null ? "" : resultData.getString("stdout", "");
+                String error = resultData == null ? "" : resultData.getString("stderr", "");
+                int exitCode = resultData == null ? -1 : resultData.getInt("exitCode", -1);
+                String message = resultData == null ? "" : resultData.getString("errorMessage", "");
+                if (!error.isEmpty()) output += (output.isEmpty() ? "" : "\n") + error;
+                if (!message.isEmpty()) output += (output.isEmpty() ? "" : "\n") + message;
+                output += (output.endsWith("\n") ? "" : "\n") + "[exit code " + exitCode + "]\n";
+                appendConsole(output);
+                consolePreview.setText(exitCode == 0 ? "Finished" : "Exited with code " + exitCode);
+            }
+        });
     }
 
     private interface RunCallback { void complete(boolean success, String output, long ms); }
@@ -416,6 +490,49 @@ public final class MainActivity extends AppCompatActivity {
         LinearLayout root = column(dp(12)); SwitchMaterial wrap = new SwitchMaterial(this); wrap.setText("Word wrap"); wrap.setChecked(prefs.getBoolean("wrap", false)); root.addView(wrap); SwitchMaterial lines = new SwitchMaterial(this); lines.setText("Line numbers"); lines.setChecked(prefs.getBoolean("lines", true)); root.addView(lines);
         TextView fontLabel = body("Font size: " + prefs.getInt("font", 15) + " sp"); root.addView(fontLabel); SeekBar font = new SeekBar(this); font.setMax(12); font.setProgress(prefs.getInt("font", 15) - 12); root.addView(font); font.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { public void onProgressChanged(SeekBar s, int p, boolean f) { fontLabel.setText("Font size: " + (12 + p) + " sp"); } public void onStartTrackingTouch(SeekBar s) {} public void onStopTrackingTouch(SeekBar s) {} });
         new MaterialAlertDialogBuilder(this).setTitle("Editor settings").setView(root).setNegativeButton("Cancel", null).setPositiveButton("Apply", (d, w) -> { int size = 12 + font.getProgress(); prefs.edit().putBoolean("wrap", wrap.isChecked()).putBoolean("lines", lines.isChecked()).putInt("font", size).apply(); optional(editor, "setWordwrap", new Class<?>[]{boolean.class}, wrap.isChecked()); optional(editor, "setLineNumberEnabled", new Class<?>[]{boolean.class}, lines.isChecked()); optional(editor, "setTextSize", new Class<?>[]{float.class}, (float) size); }).show();
+    }
+
+    private void showRuntimeManager() {
+        if (!TermuxBridge.isInstalled(this)) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Connect a runtime")
+                    .setMessage("PocketForge uses a Termux-compatible backend for downloadable programming modules. Install Termux first, then grant PocketForge permission to run commands in the Termux environment.")
+                    .setNegativeButton("Close", null)
+                    .setPositiveButton("Show setup", (d, w) -> showTermuxSetup())
+                    .show();
+            return;
+        }
+        String[] names = {"Python 3", "JavaScript / Node.js", "C / C++ (Clang)", "Go", "Rust", "PHP", "Ruby", "Perl", "Bash utilities"};
+        String[] packages = {"python", "nodejs", "clang", "golang", "rust", "php", "ruby", "perl", "bash"};
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Install language module")
+                .setMessage("Choose a package. Termux will download and install it online.")
+                .setItems(names, (d, which) -> installRuntimePackage(packages[which]))
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    private void installRuntimePackage(String packageName) {
+        showPage(2);
+        appendConsole("\n> Installing " + packageName + "…\n");
+        consolePreview.setText("Installing " + packageName + "…");
+        TermuxBridge.installPackage(this, packageName, new ResultReceiver(new Handler(getMainLooper())) {
+            @Override protected void onReceiveResult(int resultCode, Bundle resultData) {
+                String output = resultData == null ? "" : resultData.getString("stdout", "");
+                String error = resultData == null ? "" : resultData.getString("stderr", "");
+                if (!error.isEmpty()) output += (output.isEmpty() ? "" : "\n") + error;
+                appendConsole(output.isEmpty() ? "Installation finished.\n" : output + (output.endsWith("\n") ? "" : "\n"));
+                consolePreview.setText("Runtime installation finished");
+            }
+        });
+    }
+
+    private void showTermuxSetup() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("One-time runtime setup")
+                .setMessage("1. Install Termux from its official F-Droid or GitHub release.\n\n2. Open Termux once and run:\n\n  apt update\n  apt upgrade\n\n3. In Termux settings, enable allow-external-apps.\n\n4. In Android Settings → Apps → PocketForge → Permissions → Additional permissions, allow Run commands in Termux environment.\n\nThen return to PocketForge and install a language module.")
+                .setPositiveButton("Close", null)
+                .show();
     }
 
     private void showLanguageHub() {
