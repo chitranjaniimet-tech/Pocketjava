@@ -387,6 +387,7 @@ public final class MainActivity extends AppCompatActivity {
         String name = currentFile.getName().toLowerCase(Locale.ROOT);
         if (name.endsWith(".py")) return "python";
         if (name.endsWith(".js") || name.endsWith(".mjs")) return "javascript";
+        if (name.endsWith(".cpp") || name.endsWith(".cc") || name.endsWith(".cxx")) return "cpp";
         if (name.endsWith(".php")) return "php";
         if (name.endsWith(".rb")) return "ruby";
         if (name.endsWith(".sh") || name.endsWith(".bash")) return "shell";
@@ -394,37 +395,69 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void runExternalSource(String languageId, String source) {
+        if (OnlineCodeRunner.supports(languageId)) {
+            if (!prefs.getBoolean("online_runner_notice_seen", false)) {
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle("Run online")
+                        .setMessage("Python, C++ and Node.js run through PocketForge's online execution service in this release. Your source code and input are sent for execution, so never enter passwords, bank data, API keys or personal documents.")
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Continue", (d, w) -> {
+                            prefs.edit().putBoolean("online_runner_notice_seen", true).apply();
+                            requestOnlineRun(languageId, source);
+                        })
+                        .show();
+            } else {
+                requestOnlineRun(languageId, source);
+            }
+            return;
+        }
         PocketForgeRuntime runtime = new PocketForgeRuntime(this);
         PocketForgeRuntime.Module module = PocketForgeRuntime.moduleFor(languageId);
         if (module == null || !runtime.isInstalled(module)) {
             new MaterialAlertDialogBuilder(this)
-                    .setTitle("PocketForge module required")
-                    .setMessage("This language needs its PocketForge runtime module. Open Runtime manager to install a verified module into PocketForge's private workspace. PocketForge owns this runtime.")
-                    .setNegativeButton("Close", null)
-                    .setPositiveButton("Runtime manager", (d, w) -> showRuntimeManager())
+                    .setTitle("Runtime not available")
+                    .setMessage("This language needs a verified PocketForge offline runtime pack. It is not published yet, so it cannot run in the current release.")
+                    .setPositiveButton("Close", null)
                     .show();
             return;
         }
-        if (source.length() > 100000) {
-            toast("This source file is too large for the current runtime.");
+        runExternalSourceNow(languageId, source, "");
+    }
+
+    private void requestOnlineRun(String languageId, String source) {
+        boolean needsInput = source.contains("input(") || source.contains("readline(")
+                || source.contains("process.stdin") || source.contains("std::cin") || source.contains("cin >>");
+        if (!needsInput) {
+            runOnlineSource(languageId, source, "");
             return;
         }
-        boolean needsInput = source.contains("input(") || source.contains("readline(") || source.contains("process.stdin");
-        if (needsInput) {
-            EditText stdin = new EditText(this);
-            stdin.setHint("One answer per line");
-            stdin.setMinLines(4);
-            stdin.setGravity(Gravity.TOP);
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(languageId + " program input")
-                    .setMessage("Provide the input that the program should receive.")
-                    .setView(stdin)
-                    .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Run", (d, w) -> runExternalSourceNow(languageId, source, stdin.getText().toString()))
-                    .show();
-        } else {
-            runExternalSourceNow(languageId, source, "");
-        }
+        EditText stdin = new EditText(this);
+        stdin.setHint("One answer per line");
+        stdin.setMinLines(4);
+        stdin.setGravity(Gravity.TOP);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Program input")
+                .setMessage("This text is sent with the code to the online runner.")
+                .setView(stdin)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Run", (d, w) -> runOnlineSource(languageId, source, stdin.getText().toString()))
+                .show();
+    }
+
+    private void runOnlineSource(String languageId, String source, String stdin) {
+        running = true;
+        updateRunButtons();
+        showPage(2);
+        appendConsole("\n> Running " + languageId + " online\n");
+        consolePreview.setText("Running online…");
+        new OnlineCodeRunner().run(languageId, source, stdin, (success, output, exitCode) -> {
+            running = false;
+            updateRunButtons();
+            String text = output == null ? "" : output;
+            appendConsole(text + (text.endsWith("\n") ? "" : "\n") + "[exit code " + exitCode + "]\n");
+            consolePreview.setText(success ? "Finished" : "Run failed");
+            if (!success) showFixGuide(text);
+        });
     }
 
     private void runExternalSourceNow(String languageId, String source, String stdin) {
@@ -522,7 +555,7 @@ public final class MainActivity extends AppCompatActivity {
         String[] names = new String[modules.size()];
         for (int i = 0; i < modules.size(); i++) {
             PocketForgeRuntime.Module module = modules.get(i);
-            names[i] = module.name + (runtime.isInstalled(module) ? "  • installed" : "  • runtime pack not published");
+            names[i] = module.name + (OnlineCodeRunner.supports(module.id) ? "  • run online now" : (runtime.isInstalled(module) ? "  • installed" : "  • runtime pack not published"));
         }
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Runtime centre")
@@ -534,6 +567,14 @@ public final class MainActivity extends AppCompatActivity {
 
     private void showRuntimeStatus(PocketForgeRuntime.Module module) {
         PocketForgeRuntime runtime = new PocketForgeRuntime(this);
+        if (OnlineCodeRunner.supports(module.id)) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(module.name + " runs now")
+                    .setMessage("Use a matching source file and press Run. PocketForge will use its online runner until the offline runtime pack is published. Do not run private or sensitive code online.")
+                    .setPositiveButton("Close", null)
+                    .show();
+            return;
+        }
         if (runtime.isInstalled(module)) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(module.name + " is ready")
