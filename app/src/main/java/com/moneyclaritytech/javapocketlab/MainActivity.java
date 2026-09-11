@@ -31,7 +31,10 @@ import android.widget.ViewFlipper;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.button.MaterialButton;
@@ -81,8 +84,9 @@ public final class MainActivity extends AppCompatActivity {
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         applySavedThemeStyle();
         super.onCreate(savedInstanceState);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
+        configureWindowInsets();
         bindViews();
         configureSystemBars();
         prefs = getSharedPreferences("ui", MODE_PRIVATE);
@@ -98,6 +102,16 @@ public final class MainActivity extends AppCompatActivity {
         buildSettings();
         initializeProject();
         handleViewIntent(getIntent());
+    }
+
+    private void configureWindowInsets() {
+        View root = findViewById(R.id.root);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(0, bars.top, 0, bars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     private void bindViews() {
@@ -188,7 +202,7 @@ public final class MainActivity extends AppCompatActivity {
 
     private void showLesson(Lesson lesson) {
         LinearLayout box = column(dp(16)); box.addView(body(lesson.concept)); box.addView(codeBlock(lesson.code)); box.addView(label("Expected result")); box.addView(codeBlock(lesson.expected)); box.addView(label("Tiny challenge")); box.addView(body(lesson.challenge));
-        new MaterialAlertDialogBuilder(this).setTitle(lesson.title).setView(wrapScroll(box)).setNegativeButton("Close", null)
+        new MaterialAlertDialogBuilder(this).setTitle(lesson.title).setView(wrapDialogScroll(box)).setNegativeButton("Close", null)
                 .setNeutralButton("Copy code", (d, w) -> copy(lesson.code)).setPositiveButton("Load in editor", (d, w) -> { setEditorText(lesson.code); dirty = true; updateSubtitle(); showPage(0); }).show();
     }
 
@@ -196,7 +210,7 @@ public final class MainActivity extends AppCompatActivity {
         toolsContainer.removeAllViews(); toolsContainer.addView(heading("Tools"));
         toolsContainer.addView(body("Useful IDE features arranged for a phone instead of a desktop-sized screen."));
         addTool("Language hub", "Choose a language track, see what runs on-device, and follow the module roadmap.", this::showLanguageHub);
-        addTool("Runtime manager", "Install PocketForge language modules into the app-owned runtime workspace.", this::showRuntimeManager);
+        addTool("Runtime centre", "See installed runtimes, what each module needs, and the safe download path.", this::showRuntimeManager);
         addTool("Examples", "Original PocketForge examples for loops, input, arrays, methods and objects.", this::showExamples);
         addTool("Java REPL", "Try short Java statements and keep earlier statements in the session.", this::showRepl);
         addTool("Maven libraries", "Add common Maven Central JARs with group:artifact:version.", this::showMaven);
@@ -532,7 +546,7 @@ public final class MainActivity extends AppCompatActivity {
     private void showLanguageHub() {
         LinearLayout box = column(dp(14));
         box.addView(heading("Language hub"));
-        box.addView(body("PocketForge is designed as a language-learning and coding workspace. Java is the first built-in compiler; other runtimes are represented as installable modules so the platform can grow without making the base APK unnecessarily large."));
+        box.addView(body("Java runs on this device today. Other languages need a verified PocketForge runtime pack. A language is shown as installed only after its real Android runtime is present."));
         PocketForgeRuntime runtime = new PocketForgeRuntime(this);
         for (LanguageCatalog.Language language : LanguageCatalog.all()) {
             MaterialCardView card = card();
@@ -550,7 +564,7 @@ public final class MainActivity extends AppCompatActivity {
             box.addView(card, cardParams());
         }
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Choose your language path")
+                .setTitle("Language hub")
                 .setView(wrapScroll(box))
                 .setPositiveButton("Close", null)
                 .show();
@@ -681,6 +695,15 @@ public final class MainActivity extends AppCompatActivity {
     private MaterialButton actionButton(String text) { MaterialButton b = new MaterialButton(this); b.setText(text); b.setAllCaps(false); return b; }
     private MaterialButton smallButton(String text) { MaterialButton b = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle); b.setText(text); b.setAllCaps(false); b.setTextSize(13); b.setMinHeight(dp(38)); b.setInsetTop(0); b.setInsetBottom(0); LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(38)); p.setMarginEnd(dp(4)); b.setLayoutParams(p); return b; }
     private EditText dialogInput(String hint) { EditText e = new EditText(this); e.setHint(hint); e.setSingleLine(true); int pad = dp(20); e.setPadding(pad, e.getPaddingTop(), pad, e.getPaddingBottom()); return e; }
+    private ScrollView wrapDialogScroll(View child) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(child);
+        int maxHeight = (int) (getResources().getDisplayMetrics().heightPixels * 0.62f);
+        scroll.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, maxHeight));
+        return scroll;
+    }
+
     private ScrollView wrapScroll(View child) { ScrollView s = new ScrollView(this); s.addView(child); return s; }
     private void copy(String text) { ClipboardManager cb = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE); cb.setPrimaryClip(ClipData.newPlainText("Java code", text)); toast("Copied"); }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
