@@ -522,25 +522,31 @@ public final class MainActivity extends AppCompatActivity {
         String[] names = new String[modules.size()];
         for (int i = 0; i < modules.size(); i++) {
             PocketForgeRuntime.Module module = modules.get(i);
-            names[i] = module.name + (runtime.isInstalled(module) ? "  • installed" : "  • available to install");
+            names[i] = module.name + (runtime.isInstalled(module) ? "  • installed" : "  • runtime pack not published");
         }
         new MaterialAlertDialogBuilder(this)
-                .setTitle("PocketForge runtime modules")
-                .setMessage("Modules are installed inside PocketForge's private runtime workspace. They are independent of PocketJava and do not require another terminal app.")
-                .setItems(names, (d, which) -> installRuntimeModule(modules.get(which)))
+                .setTitle("Runtime centre")
+                .setMessage("Java is built in. Other languages require a real Android-compatible PocketForge runtime pack; none has been published in this build yet. This is not a setting you have missed.")
+                .setItems(names, (d, which) -> showRuntimeStatus(modules.get(which)))
                 .setNegativeButton("Close", null)
                 .show();
     }
 
-    private void installRuntimeModule(PocketForgeRuntime.Module module) {
-        showPage(2);
-        appendConsole("\n> Installing PocketForge module " + module.name + "…\n");
-        consolePreview.setText("Installing " + module.name + "…");
-        new PocketForgeRuntime(this).installModule(module, (success, output) -> {
-            appendConsole((output == null || output.isEmpty() ? "No installer output.\n" : output + (output.endsWith("\n") ? "" : "\n")));
-            consolePreview.setText(success ? module.name + " installed" : "Module installation unavailable");
-            if (!success) showFixGuide(output);
-        });
+    private void showRuntimeStatus(PocketForgeRuntime.Module module) {
+        PocketForgeRuntime runtime = new PocketForgeRuntime(this);
+        if (runtime.isInstalled(module)) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(module.name + " is ready")
+                    .setMessage("This PocketForge runtime is installed in the private workspace. Open a matching source file and press Run.")
+                    .setPositiveButton("Close", null)
+                    .show();
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(module.name + " is not available yet")
+                .setMessage("PocketForge needs a verified Android runtime pack before it can execute this language. The app does not use Termux, and there is currently no Python, C/C++, Node.js or other runtime pack to download. Java remains the only runnable language in this release.")
+                .setPositiveButton("Close", null)
+                .show();
     }
 
     private void showLanguageHub() {
@@ -565,7 +571,7 @@ public final class MainActivity extends AppCompatActivity {
         }
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Language hub")
-                .setView(wrapScroll(box))
+                .setView(wrapDialogScroll(box))
                 .setPositiveButton("Close", null)
                 .show();
     }
