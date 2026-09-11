@@ -603,7 +603,7 @@ public final class MainActivity extends AppCompatActivity {
             row.addView(title);
             row.addView(body(language.description));
             PocketForgeRuntime.Module module = PocketForgeRuntime.moduleFor(language.id);
-            String statusText = "java".equals(language.id) ? "Built-in" : (module != null && runtime.isInstalled(module) ? "Installed" : "PocketForge runtime pack pending");
+            String statusText = "java".equals(language.id) ? "Built-in" : (OnlineCodeRunner.supports(language.id) ? "Runs online now" : (module != null && runtime.isInstalled(module) ? "Installed" : "Offline runtime pack pending"));
             TextView status = body(statusText);
             status.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
             row.addView(status);
