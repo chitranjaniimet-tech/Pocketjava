@@ -18,7 +18,7 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minWidth="0dp" android:orientation="vertical">
-            <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="PocketJava" android:textStyle="bold" android:textSize="20sp" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_name" android:textStyle="bold" android:textSize="20sp" android:maxLines="1" android:ellipsize="end" />
             <TextView android:id="@+id/subtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Main.java • saved" android:textSize="12sp" android:alpha="0.68" android:maxLines="1" android:ellipsize="end" />
         </LinearLayout>
         <com.google.android.material.button.MaterialButton android:id="@+id/btnRunTop" android:layout_width="76dp" android:layout_height="44dp" android:layout_marginStart="4dp" android:text="Run" android:textAllCaps="false" />
@@ -61,7 +61,7 @@
                 <com.google.android.material.button.MaterialButton android:id="@+id/btnClearConsole" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Clear" android:textAllCaps="false" />
             </LinearLayout>
             <ScrollView android:id="@+id/consoleScroll" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
-                <TextView android:id="@+id/consoleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp" android:textColor="?attr/colorOnSurface" android:textSize="15sp" android:fontFamily="monospace" android:textIsSelectable="true" android:text="PocketJava shell&#10;Type 'help' for learner commands, or use normal shell commands.&#10;&#10;" />
+                <TextView android:id="@+id/consoleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp" android:textColor="?attr/colorOnSurface" android:textSize="15sp" android:fontFamily="monospace" android:textIsSelectable="true" android:text="PocketForge console&#10;Type 'help' for workspace commands.&#10;&#10;" />
             </ScrollView>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingTop="8dp" android:paddingEnd="16dp" android:paddingBottom="12dp">
                 <EditText android:id="@+id/terminalInput" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:hint="Type a shell command…" android:textColor="?attr/colorOnSurface" android:textColorHint="?attr/colorOnSurfaceVariant" android:singleLine="true" android:imeOptions="actionDone" android:fontFamily="monospace" android:backgroundTint="?attr/colorPrimary" />
